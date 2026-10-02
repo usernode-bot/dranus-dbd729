@@ -36,6 +36,14 @@
       "name": "Royal palace template plays",
       "path": "/#/templat/rahasia-istana-terlarang",
       "expectSelector": "[data-testid=player-canvas]"
+    },
+    {
+      "id": "studio.character-faces",
+      "name": "Template characters show photo faces",
+      "path": "/#/templat/surat-dari-ibu",
+      "expectSelector": "img.face-img[src*='/faces/']",
+      "visual": true,
+      "impact": ["public/index.html", "public/faces/**"]
     }
   ]
 }

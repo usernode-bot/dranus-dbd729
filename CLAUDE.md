@@ -111,3 +111,8 @@ Suara & Musik, Putar & Ekspor).
   exported WebM files carry pictures, subtitles, music and effects only. The
   UI says so next to the export button.
 - **No em dashes** in any UI string, in either language.
+- **Characters are real people, not cartoons.** Each character's face is a
+  portrait photo from `public/faces` (`avatar: { photo: '<id>' }`, listed in
+  `PORTRAITS`). Do not bring back drawn, cartoon or anime figures. A new photo
+  must be freely licensed, family-friendly, cropped to 400 x 500 WebP, and
+  credited in `public/faces/LICENSE.md`.
