@@ -1,4 +1,41 @@
 {
-  "description": "Create short drama films from concept to finished video with characters, scripts, storyboa",
-  "secrets": []
+  "description": "Buat film drama pendek dari ide sampai video siap putar",
+  "secrets": [],
+  "llm": {
+    "purpose": "Menulis ide cerita dan draf naskah drama pendek",
+    "suggested_daily_cap_cents": 100
+  },
+  "tests": [
+    {
+      "name": "Home shows the project screen",
+      "path": "/",
+      "expectSelector": "[data-testid=home-start]"
+    },
+    {
+      "id": "studio.new-project",
+      "name": "New project opens the wizard on Ide",
+      "path": "/#/baru",
+      "expectSelector": "[data-testid=step-ide]",
+      "visual": true,
+      "impact": ["public/index.html"]
+    },
+    {
+      "name": "Template list shows the built-in stories",
+      "path": "/#/templat",
+      "expectSelector": "[data-testid=template-card]"
+    },
+    {
+      "id": "studio.template-player",
+      "name": "Template preview player renders",
+      "path": "/#/templat/surat-dari-ibu",
+      "expectSelector": "[data-testid=player-canvas]",
+      "visual": true,
+      "impact": ["public/index.html"]
+    },
+    {
+      "name": "Royal palace template plays",
+      "path": "/#/templat/rahasia-istana-terlarang",
+      "expectSelector": "[data-testid=player-canvas]"
+    }
+  ]
 }
