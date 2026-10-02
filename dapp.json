@@ -44,6 +44,14 @@
       "expectSelector": "img.face-img[src*='/faces/']",
       "visual": true,
       "impact": ["public/index.html", "public/faces/**"]
+    },
+    {
+      "id": "studio.save-frame",
+      "name": "Player offers Save Image",
+      "path": "/#/templat/surat-dari-ibu",
+      "expectSelector": "[data-testid=save-frame]",
+      "visual": true,
+      "impact": ["public/index.html"]
     }
   ]
 }

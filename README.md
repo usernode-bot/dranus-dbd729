@@ -25,7 +25,11 @@ A six-step wizard with a progress bar:
    narrator, generated background music and sound effects (WebAudio).
 6. **Putar & Ekspor**: a canvas player with title card, camera moves,
    transitions, subtitles and credits, a draggable timeline, 16:9 or 9:16,
-   and WebM export through MediaRecorder.
+   and video export through MediaRecorder (MP4 where supported, else WebM).
+   "Simpan ke Galeri" sends the film to the phone's share sheet so it can be
+   saved to Photos or the gallery, with a download as fallback, and
+   "Simpan Gambar" does the same for a still picture from the player or a
+   shot in the storyboard.
 
 Projects can be duplicated, deleted and exported or imported as JSON. Six
 built-in templates play straight away, including a Chinese imperial palace

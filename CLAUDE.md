@@ -108,8 +108,12 @@ Suara & Musik, Putar & Ekspor).
   romance means wholesome affection. Templates, generator banks and the AI
   system prompt in `server.js` must keep to this.
 - **Export has no speech.** Browsers cannot record SpeechSynthesis, so
-  exported WebM files carry pictures, subtitles, music and effects only. The
-  UI says so next to the export button.
+  exported video files (MP4 where the browser can record it, else WebM) carry
+  pictures, subtitles, music and effects only. The UI says so next to the
+  export button.
+- **Save to gallery** goes through `saveToGallery()`: Web Share with files,
+  falling back to a download. Never hide the button based on `canShare`,
+  because the app frame may refuse share even when `canShare` says yes.
 - **No em dashes** in any UI string, in either language.
 - **Characters are real people, not cartoons.** Each character's face is a
   portrait photo from `public/faces` (`avatar: { photo: '<id>' }`, listed in
