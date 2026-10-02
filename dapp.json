@@ -31,6 +31,11 @@
       "expectSelector": "[data-testid=player-canvas]",
       "visual": true,
       "impact": ["public/index.html"]
+    },
+    {
+      "name": "Royal palace template plays",
+      "path": "/#/templat/rahasia-istana-terlarang",
+      "expectSelector": "[data-testid=player-canvas]"
     }
   ]
 }

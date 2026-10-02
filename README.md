@@ -24,8 +24,9 @@ A six-step wizard with a progress bar:
    transitions, subtitles and credits, a draggable timeline, 16:9 or 9:16,
    and WebM export through MediaRecorder.
 
-Projects can be duplicated, deleted and exported or imported as JSON. Five
-built-in templates play straight away.
+Projects can be duplicated, deleted and exported or imported as JSON. Six
+built-in templates play straight away, including a Chinese imperial palace
+drama ("Rahasia di Istana Terlarang").
 
 ## How it is built
 
