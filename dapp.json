@@ -52,6 +52,14 @@
       "expectSelector": "[data-testid=save-frame]",
       "visual": true,
       "impact": ["public/index.html"]
+    },
+    {
+      "id": "studio.save-gallery-bar",
+      "name": "Wizard bottom bar always offers Save to Gallery",
+      "path": "/#/baru",
+      "expectSelector": "[data-testid=step-ide] ~ .stepfoot [data-testid=save-gallery-bar]",
+      "visual": true,
+      "impact": ["public/index.html"]
     }
   ]
 }
