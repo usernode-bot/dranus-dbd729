@@ -413,10 +413,12 @@ const STR = {
     timeline: 'Papan adegan', timelineHint: 'Geser blok untuk memindah shot. Tarik tepi kanan untuk mengubah durasi.',
     titleCard: 'Judul', credits: 'Kru', exportVideo: 'Ekspor Video', exportNote: 'Video berisi gambar, subtitle, musik, dan efek suara. Peramban tidak bisa merekam suara bicara, jadi dialog hanya terdengar saat diputar di aplikasi.',
     exportRealtime: 'Ekspor berjalan sesuai durasi film. Biarkan halaman ini tetap terbuka.', exporting: 'Merekam video... {p}', videoReady: 'Video siap',
-    download: 'Unduh WebM', noRecorder: 'Peramban ini tidak mendukung perekaman video (MediaRecorder). Coba Chrome, Edge, atau Firefox terbaru.',
+    downloadAs: 'Unduh {f}', noRecorder: 'Peramban ini tidak mendukung perekaman video (MediaRecorder). Coba Chrome, Edge, atau Firefox terbaru.',
     exportFail: 'Ekspor gagal. Coba lagi.', preparing: 'Menyiapkan...', shortFilm: 'Sebuah film pendek', castCredits: 'Pemeran & Pengisi Suara',
     madeWith: 'Dibuat dengan Studio Drama Pendek', voiceOf: 'suara {v}', useTemplate: 'Pakai Templat Ini', templatePreview: 'Pratinjau templat',
-    templateUsed: 'Templat disalin ke proyek baru', longPress: 'Jika unduhan tidak mulai, tekan lama video untuk menyimpan.', share: 'Bagikan',
+    templateUsed: 'Templat disalin ke proyek baru', longPress: 'Jika unduhan tidak mulai, tekan lama video untuk menyimpan.',
+    saveGallery: 'Simpan ke Galeri', saveImage: 'Simpan Gambar', imageNotReady: 'Gambar belum siap. Coba lagi sebentar.',
+    savedVideoDl: 'Video diunduh. Buka folder Unduhan untuk memindahkannya ke galeri.', savedImageDl: 'Gambar diunduh. Buka folder Unduhan untuk memindahkannya ke galeri.',
     aiGrantDeclined: 'Izin AI ditolak. Memakai generator bawaan.', aiCap: 'Batas AI harian tercapai. Memakai generator bawaan.',
     notFound: 'Proyek tidak ditemukan.', characters: 'tokoh', scenesN: 'adegan', none: 'Tidak ada',
     voiceVariant: '{g}, nada {p}', more: 'Lainnya',
@@ -470,10 +472,12 @@ const STR = {
     timeline: 'Timeline', timelineHint: 'Drag a block to move a shot. Drag its right edge to change its length.',
     titleCard: 'Title', credits: 'Credits', exportVideo: 'Export Video', exportNote: 'The video has pictures, subtitles, music and sound effects. Browsers cannot record speech voices, so dialogue is only heard when playing in the app.',
     exportRealtime: 'Export runs in real time. Keep this page open.', exporting: 'Recording video... {p}', videoReady: 'Video ready',
-    download: 'Download WebM', noRecorder: 'This browser cannot record video (MediaRecorder). Try a recent Chrome, Edge or Firefox.',
+    downloadAs: 'Download {f}', noRecorder: 'This browser cannot record video (MediaRecorder). Try a recent Chrome, Edge or Firefox.',
     exportFail: 'Export failed. Try again.', preparing: 'Preparing...', shortFilm: 'A short film', castCredits: 'Cast & Voices',
     madeWith: 'Made with Short Drama Studio', voiceOf: '{v} voice', useTemplate: 'Use This Template', templatePreview: 'Template preview',
-    templateUsed: 'Template copied into a new project', longPress: 'If the download does not start, long-press the video to save it.', share: 'Share',
+    templateUsed: 'Template copied into a new project', longPress: 'If the download does not start, long-press the video to save it.',
+    saveGallery: 'Save to Gallery', saveImage: 'Save Image', imageNotReady: 'Image not ready yet. Try again in a moment.',
+    savedVideoDl: 'Video downloaded. Open your Downloads folder to move it to your gallery.', savedImageDl: 'Image downloaded. Open your Downloads folder to move it to your gallery.',
     aiGrantDeclined: 'AI access declined. Using the built-in generator.', aiCap: 'Daily AI limit reached. Using the built-in generator.',
     notFound: 'Project not found.', characters: 'characters', scenesN: 'scenes', none: 'None',
     voiceVariant: '{g}, {p} pitch', more: 'More',
@@ -872,6 +876,24 @@ function downloadBlob(blob, filename) {
   a.href = url; a.download = filename; a.rel = 'noopener';
   document.body.appendChild(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 60000);
+}
+/* Save to the phone gallery: the OS share sheet with the file attached (iOS offers Save Video / Save Image),
+   else a plain download. Call straight from the tap; the app frame may refuse share even when canShare says yes. */
+function saveToGallery(file, kind) {
+  const fallback = () => { downloadBlob(file, file.name); toast(t(kind === 'video' ? 'savedVideoDl' : 'savedImageDl')); };
+  let ok = false;
+  try { ok = typeof navigator.share === 'function' && (typeof navigator.canShare !== 'function' || navigator.canShare({ files: [file] })); } catch (_) { ok = false; }
+  if (!ok) return fallback();
+  let pr;
+  try { pr = navigator.share({ files: [file], title: file.name }); } catch (e) { console.warn('share failed', e); return fallback(); }
+  Promise.resolve(pr).catch((e) => { if (e && e.name === 'AbortError') return; console.warn('share failed', e); fallback(); });
+}
+/* A canvas as a JPEG File, built synchronously so the tap's user activation survives until share(). */
+function canvasFile(cv, name) {
+  const url = cv.toDataURL('image/jpeg', 0.92);
+  const bin = atob(url.slice(url.indexOf(',') + 1)); const buf = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
+  return new File([buf], name, { type: 'image/jpeg' });
 }
 const fileSafe = (s) => (String(s || 'film').replace(/[^\w\- ]+/g, '').trim().replace(/\s+/g, '-') || 'film').slice(0, 60);
 
@@ -1715,6 +1737,7 @@ class Player {
       '<span class="timecode" data-ref="tc">0:00 / 0:00</span><span class="grow"></span>' +
       '<select class="inp" style="width:auto;min-height:40px" data-ref="rate" aria-label="' + esc(t('speed')) + '">' + [0.75, 1, 1.25, 1.5].map((v) => '<option value="' + v + '"' + (v === 1 ? ' selected' : '') + '>' + String(v).replace('.', LANG === 'id' ? ',' : '.') + '×</option>').join('') + '</select>' +
       '<div class="seg" data-ref="ratio">' + ['16:9', '9:16'].map((a) => '<button type="button" data-a="' + a + '" aria-pressed="' + (this.aspect === a) + '">' + a + '</button>').join('') + '</div>' +
+      '<button class="icon-btn" data-ref="snap" data-testid="save-frame" aria-label="' + esc(t('saveImage')) + '" title="' + esc(t('saveImage')) + '">' + ICON.image + '</button>' +
       '<button class="icon-btn" data-ref="fs" aria-label="' + esc(t('fullscreen')) + '" title="' + esc(t('fullscreen')) + '">' + ICON.fullscreen + '</button></div>' +
       '<div data-ref="tlwrap"></div>';
     this.el = {}; $$('[data-ref]', r).forEach((e) => { this.el[e.dataset.ref] = e; });
@@ -1724,6 +1747,7 @@ class Player {
     this.el.rate.onchange = () => { this.rate = parseFloat(this.el.rate.value) || 1; TTS.cancel(); this.speakingId = null; };
     this.el.scrub.oninput = () => { if (this.tl) this.seek((this.el.scrub.value / 1000) * this.tl.total); };
     $$('button', this.el.ratio).forEach((b) => { b.onclick = () => { if (this.opts.onAspect) this.opts.onAspect(b.dataset.a); else this.data.project.settings.aspect = b.dataset.a; $$('button', this.el.ratio).forEach((x) => x.setAttribute('aria-pressed', x === b)); this.refresh(); }; });
+    this.el.snap.onclick = () => this.saveFrame();
     this.el.fs.onclick = () => this.toggleFs();
     this.el.fsclose.onclick = () => this.toggleFs(false);
     this._fsHandler = () => { if (!document.fullscreenElement && this.el.stage.classList.contains('fs-native')) this.el.stage.classList.remove('fs-native'); };
@@ -1900,6 +1924,16 @@ class Player {
     if (this.tl) this.tl.segs.forEach((s) => { if (s.kind === 'shot') { s.lines.forEach((l) => { if (l.start < this.time) this.spoken.add(l.d.id); }); if (s.start < this.time - 300) this.data.audio.sfx.filter((f) => f.sceneId === s.p.scene.id && s.p.first).forEach((f) => this.fired.add(f.id)); } });
     this.draw(); this.updateUi();
   }
+  saveFrame() {
+    if (this.exporting) return;
+    if (!this.tl || !this.el.msg.classList.contains('hidden')) return toast(t('imageNotReady'));
+    if (this.playing) this.pause();
+    this.draw();
+    const tc = fmtTime(this.time).replace(':', '-');
+    let file;
+    try { file = canvasFile(this.canvas, fileSafe(this.data.project.title) + '-' + tc + '.jpg'); } catch (e) { console.warn('frame capture failed', e); return toast(t('exportFail')); }
+    saveToGallery(file, 'image');
+  }
   toggleFs(force) {
     const st = this.el.stage;
     const on = force != null ? force : !(st.classList.contains('fs-css') || document.fullscreenElement === st);
@@ -2002,7 +2036,8 @@ class Player {
   static exportSupport() {
     const ok = typeof window.MediaRecorder !== 'undefined' && typeof HTMLCanvasElement !== 'undefined' && typeof HTMLCanvasElement.prototype.captureStream === 'function';
     if (!ok) return null;
-    const types = ['video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm'];
+    // MP4 first: iOS Photos only accepts MP4; Android galleries take either.
+    const types = ['video/mp4;codecs=avc1,mp4a', 'video/mp4', 'video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm'];
     return types.find((m) => { try { return MediaRecorder.isTypeSupported(m); } catch (_) { return false; } }) || null;
   }
   exportVideo(onProgress) {
@@ -2019,12 +2054,12 @@ class Player {
       try { rec = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 4000000 }); } catch (e) { SND.attachExport(null); return reject(e); }
       const chunks = []; let cancelled = false;
       rec.ondataavailable = (e) => { if (e.data && e.data.size) chunks.push(e.data); };
-      const cleanup = () => { this.exporting = false; SND.attachExport(null); vs.getTracks().forEach((tr) => tr.stop()); clearInterval(prog); this.exportCancel = null; };
-      rec.onstop = () => { cleanup(); if (cancelled) reject(new Error('cancelled')); else resolve(new Blob(chunks, { type: 'video/webm' })); };
+      const cleanup = () => { this.exporting = false; this.el.snap.classList.remove('hidden'); SND.attachExport(null); vs.getTracks().forEach((tr) => tr.stop()); clearInterval(prog); this.exportCancel = null; };
+      rec.onstop = () => { cleanup(); if (cancelled) reject(new Error('cancelled')); else resolve(new Blob(chunks, { type: /mp4/.test(rec.mimeType || mime) ? 'video/mp4' : 'video/webm' })); };
       const prog = setInterval(() => { if (onProgress && this.tl) onProgress(this.time / this.tl.total); }, 250);
       this.exportCancel = () => { cancelled = true; this.pause(); if (rec.state !== 'inactive') rec.stop(); };
       this.onFinish = () => { setTimeout(() => { if (rec.state !== 'inactive') rec.stop(); }, 300); };
-      this.exporting = true;
+      this.exporting = true; this.el.snap.classList.add('hidden');
       this.seek(0);
       rec.start(1000);
       this.playing = true; this._last = 0; this.lastSeg = -1;
@@ -2050,6 +2085,7 @@ const ICON = {
   upload: sv('<path d="M12 16V4M7 9l5-5 5 5M4 20h16"/>'), download: sv('<path d="M12 4v12M7 11l5 5 5-5M4 20h16"/>'), copy: sv('<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/>'),
   speaker: sv('<path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16 9a4 4 0 0 1 0 6M18.5 6.5a8 8 0 0 1 0 11"/>'), wand: sv('<path d="M4 20L16 8M14 4l1 2 2 1-2 1-1 2-1-2-2-1 2-1zM19 11l.7 1.3L21 13l-1.3.7L19 15l-.7-1.3L17 13l1.3-.7z"/>'),
   warn: sv('<path d="M12 3l10 18H2z"/><path d="M12 10v5M12 18h.01"/>'), check: sv('<path d="M5 12l5 5 9-10"/>'), film2: sv('<path d="M4 6h16v12H4zM4 10h16M8 6v4M12 6v4M16 6v4"/>'),
+  image: sv('<rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-9 9"/>'),
 };
 const STEP_KEYS = ['ide', 'tokoh', 'naskah', 'storyboard', 'suara', 'putar'];
 const STEP_ICONS = [ICON.idea, ICON.cast, ICON.script, ICON.board, ICON.sound, ICON.film];
@@ -2597,12 +2633,24 @@ function stepStoryboard(body, root) {
 function openShotEditor(shotId, redraw) {
   const d = App.data;
   const box = h('<div class="stack" data-testid="shot-sheet"></div>');
-  let sh;
+  let sh, snapFile = null, snapTok = null;
+  // Compose the shot picture (room plus faces) ahead of the tap, so Save Image can share it with no await.
+  const prepSnap = (p, k, sceneId) => {
+    snapFile = null; const tok = (snapTok = {});
+    shotImage(d, p, d.project.settings.aspect).then((img) => {
+      if (tok !== snapTok || !img) return;
+      const w = img.naturalWidth || img.width, hh = img.naturalHeight || img.height;
+      const cv = document.createElement('canvas'); cv.width = w; cv.height = hh; cv.getContext('2d').drawImage(img, 0, 0, w, hh);
+      try { snapFile = canvasFile(cv, fileSafe(d.project.title) + '-' + (LANG === 'id' ? 'adegan' : 'scene') + '-' + sceneIndex(d, sceneId) + '-shot-' + (k + 1) + '.jpg'); } catch (e) { console.warn('shot capture failed', e); }
+    }).catch((e) => console.warn('shot capture failed', e));
+  };
   const draw = () => {
     const s = d.shots.find((x) => x.id === shotId); if (!s) { sh && sh.dismiss(); return; }
     const plan = effectiveShots(d); const p = plan.find((x) => x.shot.id === shotId);
     const sibs = shotsOf(d, s.sceneId); const k = sibs.indexOf(s);
+    prepSnap(p, k, s.sceneId);
     box.innerHTML = '<h3>' + esc(t('editShot')) + ' ' + (k + 1) + '</h3><div style="border-radius:12px;overflow:hidden;background:#000"><div class="' + (d.project.settings.aspect === '9:16' ? 'frame-916' : '') + '">' + frameThumb(d, p, d.project.settings.aspect) + '</div></div>' +
+      '<div class="row"><button class="btn sm" data-act="snap" data-testid="save-shot">' + ICON.image + esc(t('saveImage')) + '</button></div>' +
       '<div class="fld"><span>' + esc(t('shotType')) + '</span>' + segHtml('stype', SHOT_TYPES, s.type, (v) => lbl('shot', v)) + '</div>' +
       '<div class="fld"><span>' + esc(t('camera')) + '</span>' + segHtml('scam', CAMS, s.camera, (v) => lbl('cam', v)) + '</div>' +
       '<div class="fld"><span>' + esc(t('transition')) + '</span>' + segHtml('strans', TRANS, s.transition, (v) => lbl('tr', v)) + '</div>' +
@@ -2630,6 +2678,7 @@ function openShotEditor(shotId, redraw) {
     const b = e.target.closest('[data-act]'); if (!b) return;
     const s = S(); const sibs = shotsOf(d, s.sceneId); const k = sibs.indexOf(s);
     if (b.dataset.act === 'done') return sh.dismiss();
+    if (b.dataset.act === 'snap') return snapFile ? saveToGallery(snapFile, 'image') : toast(t('imageNotReady'));
     if (b.dataset.act === 'up' || b.dataset.act === 'down') { const j = b.dataset.act === 'up' ? k - 1 : k + 1; if (j < 0 || j >= sibs.length) return; [sibs[k], sibs[j]] = [sibs[j], sibs[k]]; renumber(sibs); upd(); }
     if (b.dataset.act === 'del' && sibs.length > 1) { d.shots = d.shots.filter((x) => x.id !== s.id); renumber(shotsOf(d, s.sceneId)); reconcileShots(d); changed(); redraw(); sh.dismiss(); }
   });
@@ -2745,11 +2794,13 @@ function stepPutar(body, root) {
       const blob = await player.exportVideo(upd);
       if (blobUrl) URL.revokeObjectURL(blobUrl);
       blobUrl = URL.createObjectURL(blob);
-      const fname = fileSafe(d.project.title) + '.webm';
+      const ext = blob.type === 'video/mp4' ? 'mp4' : 'webm';
+      const fname = fileSafe(d.project.title) + '.' + ext;
+      const file = new File([blob], fname, { type: blob.type });
       res.innerHTML = '<div class="row" style="color:var(--ok);font-weight:700">' + ICON.check + esc(t('videoReady')) + '</div><video controls playsinline src="' + blobUrl + '" style="width:100%;max-height:60vh;border-radius:12px;background:#000"></video>' +
-        '<div class="row wrap"><a class="btn gold big" href="' + blobUrl + '" download="' + esc(fname) + '" data-testid="download-webm">' + ICON.download + esc(t('download')) + '</a>' +
-        (navigator.canShare && navigator.canShare({ files: [new File([blob], fname, { type: 'video/webm' })] }) ? '<button class="btn" data-act="share">' + esc(t('share')) + '</button>' : '') + '</div><p class="tiny muted" style="margin:0">' + esc(t('longPress')) + '</p>';
-      const sb = $('[data-act=share]', res); if (sb) sb.onclick = () => navigator.share({ files: [new File([blob], fname, { type: 'video/webm' })], title: d.project.title }).catch(() => {});
+        '<div class="row wrap"><button class="btn gold big" data-act="savegallery" data-testid="save-gallery">' + ICON.image + esc(t('saveGallery')) + '</button>' +
+        '<a class="btn" href="' + blobUrl + '" download="' + esc(fname) + '" data-testid="download-webm">' + ICON.download + esc(t('downloadAs', { f: ext.toUpperCase() })) + '</a></div><p class="tiny muted" style="margin:0">' + esc(t('longPress')) + '</p>';
+      $('[data-act=savegallery]', res).onclick = () => saveToGallery(file, 'video');
       res.classList.remove('hidden');
       toast(t('videoReady'));
     } catch (e) {
