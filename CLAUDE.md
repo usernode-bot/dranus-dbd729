@@ -88,13 +88,26 @@ tables you've marked private), etc.
 
 ## About DRANUS
 
-Create short drama films from concept to finished video with characters, scripts, storyboa
-
-_(add a sentence or two more of product context here so Claude Code has a
-shared understanding of what this app is for)_
+"Studio Drama Pendek": a mobile-first, single-file web app (Indonesian UI,
+English toggle) for making short family-friendly drama films, from idea to a
+playable video, through a 6-step wizard (Ide, Tokoh, Naskah, Storyboard,
+Suara & Musik, Putar & Ekspor).
 
 ## App-specific conventions
 
-_(optional — e.g. "all currency values stored as integer cents, not
-floats"; "the `posts` table is append-only"; "avoid adding new
-dependencies"; etc.)_
+- **Single file.** The whole app lives in `public/index.html` (inline CSS and
+  JS, no framework). Keep it that way unless the product owner asks otherwise.
+- **Data lives in the browser.** Projects are stored in `localStorage` under
+  `dranus:v1:<userId>:index` and `dranus:v1:<userId>:p:<projectId>`. The shape
+  is normalized (`project`, `characters`, `scenes`, `dialogues`, `shots`,
+  `audio`) and carries `schemaVersion`; bump it and extend `migrate()` when the
+  shape changes. JSON export wraps it as `{ app: 'dranus', schemaVersion, data }`.
+- **One duration function.** `buildTimeline()` drives the estimate badge, the
+  timeline widths, subtitle timing and export, so they always agree.
+- **Content.** Horror means mild suspense with a harmless explanation;
+  romance means wholesome affection. Templates, generator banks and the AI
+  system prompt in `server.js` must keep to this.
+- **Export has no speech.** Browsers cannot record SpeechSynthesis, so
+  exported WebM files carry pictures, subtitles, music and effects only. The
+  UI says so next to the export button.
+- **No em dashes** in any UI string, in either language.

@@ -1,27 +1,42 @@
-# DRANUS
+# DRANUS: Studio Drama Pendek
 
-> **Starter template** — this repo was scaffolded by Homeroom Social
-> Vibecoding. Everything in it is placeholder example code until the
-> app's first real feature is built.
+A mobile-first studio for making short drama films, from an idea to a
+playable video, in the browser. The UI is Indonesian by default with an
+English toggle.
 
-The scaffold is a small working demo that proves the plumbing works:
+## What it does
 
-- **Sign-in** — the server verifies the platform-issued user token
-  (an RS256 JWT) on every request, so the app already knows who is
-  using it. No accounts to build.
-- **Database** — the app has its own private Postgres database; the
-  demo stores button presses in a `presses` table.
-- **Live API** — two example routes (`/api/press`,
-  `/api/leaderboard`) read and write through a real Express server.
-- **Styling** — Tailwind CSS, precompiled by `npm run build` during
-  image creation with either Kubernetes/Paketo or standalone Docker.
+A six-step wizard with a progress bar:
 
-## Replacing the template
+1. **Ide**: title, genre, target length (1, 3 or 5 minutes), tone, dialogue
+   language and a one-sentence premise. "Beri Saya Ide" offers 5 premises.
+2. **Tokoh**: 2 to 5 characters with SVG avatars (face, hair, skin, clothes,
+   costume colour), relationships and a voice (gender, pitch, speed).
+3. **Naskah**: a three-act script split into scenes with location, time,
+   mood, action and dialogue lines. Reorder by drag or up/down buttons.
+   "Tulis Otomatis" drafts a script. A script checker and a duration
+   estimate stay visible.
+4. **Storyboard**: each scene becomes shots (wide, medium, close-up) with a
+   camera move and transition over an SVG location background.
+5. **Suara & Musik**: per-character speech (Web Speech API), an optional
+   narrator, generated background music and sound effects (WebAudio).
+6. **Putar & Ekspor**: a canvas player with title card, camera moves,
+   transitions, subtitles and credits, a draggable timeline, 16:9 or 9:16,
+   and WebM export through MediaRecorder.
 
-Open the app on Homeroom, tap the Homeroom icon in the header, choose
-**Start a new change**, and describe the app you want in plain English.
-The template will be replaced with your real app. You can also run
-Claude Code against this repo directly; start with `CLAUDE.md`, which
-carries the app-specific notes and points at the platform rules.
+Projects can be duplicated, deleted and exported or imported as JSON. Five
+built-in templates play straight away.
 
-Once the real app exists, rewrite this README to describe it.
+## How it is built
+
+- `public/index.html` is the whole app: one file with inline CSS and JS. It
+  loads the platform's centrally hosted bridge and native UI kit by relative
+  path, plus the precompiled `/tailwind.css`.
+- Projects are stored in the browser's `localStorage`, namespaced per
+  Homeroom user. There are no database tables yet.
+- `server.js` serves the app and two AI routes. `/api/ai/status` reports
+  whether the platform LLM proxy is available and `/api/ai/generate` asks it
+  for premises or a script draft. Without the proxy (staging, local runs) the
+  app uses its built-in offline generator.
+
+Run locally with `npm ci && npm run build && npm start`.

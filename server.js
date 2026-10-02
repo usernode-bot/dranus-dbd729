@@ -109,31 +109,79 @@ app.get('/health', (_req, res) => res.json({ status: 'ok' }));
 // fresh load.
 app.get('/favicon.ico', (_req, res) => res.status(204).end());
 
-// Button press
-app.post('/api/press', async (req, res) => {
-  try {
-    await pool.query(`
-      INSERT INTO presses (user_id, username) VALUES ($1, $2)
-    `, [req.user.id, req.user.username]);
-    res.json({ ok: true });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
+// AI writing helpers. The platform LLM proxy is only injected in production;
+// staging and local runs report it unavailable and the client falls back to
+// its built-in offline generator.
+const LLM_ENABLED = !!(process.env.USERNODE_LLM_PROXY_URL && process.env.USERNODE_LLM_PROXY_TOKEN);
+const LLM_MODEL = 'claude-haiku-4-5-20251001';
 
-// Leaderboard
-app.get('/api/leaderboard', async (_req, res) => {
+const AI_SYSTEM = [
+  'You help people write short family-friendly drama films for the app "Studio Drama Pendek".',
+  'Content rules (mandatory): no violence, injury, weapons, crime as entertainment, self-harm,',
+  'sexual or suggestive content, dating, flirting, alcohol, drugs or gambling. Romance means',
+  'wholesome affection only (letters, longing, family love, reunions). Horror means mild suspense',
+  'with a harmless explanation (creaks, shadows, a lost cat). If the request asks for anything',
+  'outside these rules, write a gentle, safe story instead.',
+  'Reply with JSON only, no prose and no code fences.',
+].join(' ');
+
+function aiPrompt(kind, lang, input) {
+  const language = lang === 'en' ? 'English' : 'Bahasa Indonesia';
+  const i = input || {};
+  if (kind === 'ideas') {
+    return `Write 5 different one-sentence premises for a short drama film in ${language}.
+Genre: ${i.genre || ''}. Tone: ${i.tone || ''}. Title (may be empty): ${i.title || ''}.
+Return {"ideas":["...","...","...","...","..."]}.`;
+  }
+  return `Write a three-act script for a short drama film in ${language}.
+Title: ${i.title || ''}. Genre: ${i.genre || ''}. Tone: ${i.tone || ''}. Premise: ${i.premise || ''}.
+Target length: ${i.targetMinutes || 1} minute(s), so about ${i.sceneCount || 3} scenes with ${i.linesPerScene || 4} short dialogue lines each.
+Characters (use exactly these names): ${JSON.stringify(i.characters || [])}.
+Allowed location keys: ${JSON.stringify(i.locations || [])}.
+Return {"scenes":[{"act":1|2|3,"location":"<location key>","timeOfDay":"pagi|siang|malam","mood":"...","action":"one sentence","lines":[{"character":"<name or Narator>","text":"..."}]}]}.
+Every character should speak at least once. Keep every line under 140 characters.`;
+}
+
+function parseJsonLoose(text) {
+  const m = String(text || '').match(/\{[\s\S]*\}/);
+  if (!m) return null;
+  try { return JSON.parse(m[0]); } catch { return null; }
+}
+
+app.get('/api/ai/status', (_req, res) => res.json({ llm: LLM_ENABLED }));
+
+app.post('/api/ai/generate', async (req, res) => {
+  if (!LLM_ENABLED) return res.status(503).json({ code: 'llm_unavailable' });
+  const { kind, lang, input } = req.body || {};
+  if (kind !== 'ideas' && kind !== 'script') return res.status(400).json({ code: 'bad_kind' });
+  if (JSON.stringify(input || {}).length > 8192) return res.status(413).json({ code: 'too_large' });
   try {
-    const { rows } = await pool.query(`
-      SELECT username, COUNT(*) as presses
-      FROM presses
-      GROUP BY username
-      ORDER BY presses DESC
-      LIMIT 50
-    `);
-    res.json({ leaderboard: rows });
+    const upstream = await fetch(`${process.env.USERNODE_LLM_PROXY_URL}/v1/messages`, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'anthropic-version': '2023-06-01',
+        'x-usernode-app-token': process.env.USERNODE_LLM_PROXY_TOKEN,
+        'x-usernode-user-token': req.headers['x-usernode-token'] || req.query.token || '',
+      },
+      body: JSON.stringify({
+        model: LLM_MODEL,
+        max_tokens: kind === 'script' ? 4000 : 800,
+        system: AI_SYSTEM,
+        messages: [{ role: 'user', content: aiPrompt(kind, lang, input) }],
+      }),
+    });
+    const body = await upstream.json().catch(() => ({}));
+    if (!upstream.ok) {
+      return res.status(upstream.status).json({ code: (body && body.code) || 'upstream_error' });
+    }
+    const text = (body.content || []).filter(c => c.type === 'text').map(c => c.text).join('');
+    const data = parseJsonLoose(text);
+    if (!data) return res.status(502).json({ code: 'bad_output' });
+    res.json({ data });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.warn('ai generate failed: ' + err.message);
+    res.status(502).json({ code: 'upstream_error' });
   }
 });
 
@@ -174,18 +222,26 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
+// Projects live in each browser's storage, so the app has no tables yet. The
+// pool stays for future server-side storage; it connects lazily.
 async function start() {
-  await pool.query(`
-    CREATE TABLE IF NOT EXISTS presses (
-      id SERIAL PRIMARY KEY,
-      user_id INTEGER NOT NULL,
-      username VARCHAR(255) NOT NULL,
-      created_at TIMESTAMPTZ DEFAULT NOW()
-    )
-  `);
   const server = app.listen(port, () => console.log(`Listening on :${port}`));
   // Let Envoy retire idle upstream connections at 60s, with a 15s margin.
   server.keepAliveTimeout = 75_000;
+
+  let shuttingDown = false;
+  const shutdown = (signal) => {
+    if (shuttingDown) return;
+    shuttingDown = true;
+    console.log(`${signal} received, draining`);
+    server.close();
+    setTimeout(async () => {
+      try { await pool.end(); } catch {}
+      process.exit(0);
+    }, 3000).unref();
+  };
+  process.on('SIGTERM', () => shutdown('SIGTERM'));
+  process.on('SIGINT', () => shutdown('SIGINT'));
 }
 
 start().catch(err => { console.error(err); process.exit(1); });
