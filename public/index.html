@@ -387,7 +387,7 @@ const STR = {
       'Atur suara tokoh, narator, musik latar, dan efek suara.', 'Putar film, atur papan adegan, lalu ekspor video.'],
     title: 'Judul', genre: 'Genre', target: 'Durasi target', tone: 'Nada cerita', dialogLang: 'Bahasa dialog', premise: 'Premis (satu kalimat)',
     premisePh: 'Contoh: Seorang anak menemukan surat lama dari ibunya di hari kelulusan.', titlePh: 'Judul film',
-    minutes: '{n} menit', giveIdeas: 'Beri Saya Ide', ideasTitle: 'Pilih salah satu premis', reroll: 'Acak Lagi', ideaPicked: 'Premis dipakai. Kamu bisa mengubahnya.',
+    minutes: '{n} menit', hour: '1 jam', giveIdeas: 'Beri Saya Ide', ideasTitle: 'Pilih salah satu premis', reroll: 'Acak Lagi', ideaPicked: 'Premis dipakai. Kamu bisa mengubahnya.',
     byAi: 'Ditulis AI', byGen: 'Generator bawaan', generating: 'Sedang menulis...',
     langId: 'Indonesia', langEn: 'Inggris',
     cast: 'Tokoh', addChar: 'Tambah Tokoh', name: 'Nama', age: 'Usia', role: 'Peran', traits: 'Sifat',
@@ -446,7 +446,7 @@ const STR = {
       'Set character voices, narrator, background music and sound effects.', 'Play the film, arrange the timeline, then export the video.'],
     title: 'Title', genre: 'Genre', target: 'Target length', tone: 'Tone', dialogLang: 'Dialogue language', premise: 'Premise (one sentence)',
     premisePh: 'Example: A child finds an old letter from their mother on graduation day.', titlePh: 'Film title',
-    minutes: '{n} min', giveIdeas: 'Give Me Ideas', ideasTitle: 'Pick a premise', reroll: 'Shuffle Again', ideaPicked: 'Premise added. You can still edit it.',
+    minutes: '{n} min', hour: '1 hour', giveIdeas: 'Give Me Ideas', ideasTitle: 'Pick a premise', reroll: 'Shuffle Again', ideaPicked: 'Premise added. You can still edit it.',
     byAi: 'Written by AI', byGen: 'Built-in generator', generating: 'Writing...',
     langId: 'Indonesian', langEn: 'English',
     cast: 'Cast', addChar: 'Add Character', name: 'Name', age: 'Age', role: 'Role', traits: 'Traits',
@@ -525,6 +525,8 @@ function t(key, vars) {
   return s;
 }
 const lbl = (group, key) => (LABELS[LANG][group] && LABELS[LANG][group][key]) || key || '';
+/* Duration target as words: only one hour gets its own phrase. */
+const targetLabel = (m) => (m === 60 ? t('hour') : t('minutes', { n: m }));
 
 /* ---------- constants ---------- */
 const GENRES = ['romantis', 'keluarga', 'horor', 'komedi', 'misteri', 'religi', 'sosial', 'kerajaan'];
@@ -1032,8 +1034,8 @@ function offlineScript(data) {
   const people = cast.length ? cast : data.characters;
   const lead = people.find((c) => c.role === 'utama') || people[0];
   const others = people.filter((c) => c !== lead);
-  const perAct = { 1: 1, 3: 2, 5: 3 }[data.project.targetMinutes] || 1;
-  const nLines = { 1: 4, 3: 5, 5: 6 }[data.project.targetMinutes] || 4;
+  const perAct = { 1: 1, 3: 2, 5: 3, 60: 3 }[data.project.targetMinutes] || 1;
+  const nLines = { 1: 4, 3: 5, 5: 6, 60: 6 }[data.project.targetMinutes] || 4;
   const night = data.project.genre === 'horor' || data.project.genre === 'misteri';
   const pools = {};
   const draw = (k) => {
@@ -1111,10 +1113,10 @@ async function generateIdeas(data) {
 }
 async function generateScript(data) {
   const lang = data.project.dialogLang === 'en' ? 'en' : 'id';
-  const perAct = { 1: 1, 3: 2, 5: 3 }[data.project.targetMinutes] || 1;
+  const perAct = { 1: 1, 3: 2, 5: 3, 60: 3 }[data.project.targetMinutes] || 1;
   const ai = await aiGenerate('script', lang, {
     title: data.project.title, genre: data.project.genre, tone: data.project.tone, premise: data.project.premise, targetMinutes: data.project.targetMinutes,
-    sceneCount: perAct * 3, linesPerScene: { 1: 4, 3: 5, 5: 6 }[data.project.targetMinutes] || 4,
+    sceneCount: perAct * 3, linesPerScene: { 1: 4, 3: 5, 5: 6, 60: 6 }[data.project.targetMinutes] || 4,
     characters: data.characters.map((c) => ({ name: c.name, age: c.age, role: c.role, traits: c.traits })), locations: LOCS,
   });
   if (ai && Array.isArray(ai.scenes) && ai.scenes.length) {
@@ -2358,7 +2360,7 @@ function stepIde(body, root) {
   body.innerHTML = '<div class="card stack">' +
     '<label class="fld">' + esc(t('title')) + '<input class="inp" data-f="title" value="' + esc(p.title) + '" placeholder="' + esc(t('titlePh')) + '" maxlength="80"></label>' +
     '<div class="fld"><span class="fld" style="display:block">' + esc(t('genre')) + '</span>' + segHtml('genre', GENRES, p.genre, (v) => lbl('genre', v)) + '</div>' +
-    '<div class="fld"><span>' + esc(t('target')) + '</span>' + segHtml('target', [1, 3, 5], p.targetMinutes, (v) => t('minutes', { n: v })) + '</div>' +
+    '<div class="fld"><span>' + esc(t('target')) + '</span>' + segHtml('target', [1, 3, 5, 60], p.targetMinutes, (v) => targetLabel(v)) + '</div>' +
     '<div class="fld"><span>' + esc(t('tone')) + '</span>' + segHtml('tone', TONES, p.tone, (v) => lbl('tone', v)) + '</div>' +
     '<div class="fld"><span>' + esc(t('dialogLang')) + '</span>' + segHtml('dlang', ['id', 'en'], p.dialogLang, (v) => (v === 'id' ? t('langId') : t('langEn'))) + '</div>' +
     '<label class="fld">' + esc(t('premise')) + '<textarea class="inp" data-f="premise" rows="3" maxlength="300" placeholder="' + esc(t('premisePh')) + '">' + esc(p.premise) + '</textarea></label>' +
@@ -2519,7 +2521,7 @@ function stepNaskah(body, root) {
     let n = 0;
     body.innerHTML = '<datalist id="loc-list">' + LOCS.map((k) => '<option value="' + esc(lbl('loc', k)) + '">').join('') + '</datalist>' +
       '<div class="row wrap"><button class="btn gold" data-act="autowrite" data-testid="auto-write">' + ICON.wand + esc(t('autoWrite')) + '</button></div>' +
-      '<div class="banner red hidden" data-ref="over">' + ICON.warn + '<span>' + esc(t('overTarget', { t: t('minutes', { n: d.project.targetMinutes }) })) + '</span></div>' +
+      '<div class="banner red hidden" data-ref="over">' + ICON.warn + '<span>' + esc(t('overTarget', { t: targetLabel(d.project.targetMinutes) })) + '</span></div>' +
       '<details class="card flat" open data-testid="checker"><summary style="cursor:pointer;font-weight:700;min-height:32px;display:flex;align-items:center;gap:.5rem">' + esc(t('checker')) + ' <span data-ref="icount" class="chip">0</span></summary><div data-ref="issues" style="margin-top:.4rem"></div></details>' +
       (d.scenes.length ? '' : '<div class="empty muted">' + esc(t('noScenes')) + '</div>') +
       [1, 2, 3].map((a) => '<section class="act"><h3>' + esc(t('acts')[a - 1]) + '</h3><div data-scenes="' + a + '">' + scenesOfAct(d, a).map((s) => sceneHtml(d, s, ++n)).join('') + '</div>' +
