@@ -248,6 +248,11 @@
     .face-grid { grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); }
     .face-grid button { padding: 0; overflow: hidden; aspect-ratio: 4 / 5; }
     .face-grid button .face-img { border-radius: 10px; }
+    .lib-face { position: relative; }
+    .lib-face > button { display: block; width: 100%; border: 2px solid var(--line); background: var(--bg2); border-radius: 12px; padding: 0; overflow: hidden; aspect-ratio: 4 / 5; cursor: pointer; min-height: 44px; }
+    .lib-face > button[aria-pressed="true"] { border-color: var(--gold); }
+    .lib-face > button .face-img { border-radius: 10px; }
+    .lib-face-del { position: absolute; top: -6px; right: -6px; width: 28px; height: 28px; min-width: 28px; background: var(--panel); border: 1px solid var(--line); border-radius: 50%; }
     .swatches { display: flex; flex-wrap: wrap; gap: .45rem; }
     .swatches button { width: 40px; height: 40px; border-radius: 50%; border: 3px solid transparent; cursor: pointer; box-shadow: inset 0 0 0 1px rgba(0,0,0,.2); }
     .swatches button[aria-pressed="true"] { border-color: var(--gold); }
@@ -403,6 +408,8 @@ const STR = {
     sampleLine: 'Halo, nama saya {n}. Senang bertemu denganmu.', editAvatar: 'Ubah wajah', faceOf: 'Wajah: {n}', all: 'Semua', faceF: 'Perempuan', faceM: 'Laki-laki',
     noFaces: 'Belum ada wajah untuk pilihan ini.', done: 'Selesai',
     uploadFace: 'Unggah dari Galeri', useStudioFace: 'Kembali ke foto studio', uploadHint: 'Foto dari galerimu hanya tersimpan di perangkat ini.',
+    galleryFaces: 'Foto dari galeri', noGalleryFaces: 'Belum ada foto dari galeri.', libraryFull: 'Ruang foto galeri penuh. Hapus salah satu dulu.',
+    delFaceQ: 'Hapus foto ini dari aplikasi?', delFaceMsg: 'Tokoh yang sudah memakainya tetap memakainya.',
     imgBad: 'File itu bukan gambar yang didukung.', imgTooBig: 'Foto terlalu besar. Maksimal 10 MB.', imgFail: 'Foto gagal diproses. Coba foto lain.',
     minChars: 'Tambah minimal 2 tokoh agar cerita berjalan.', maxChars: 'Maksimal 5 tokoh.', delCharQ: 'Hapus tokoh ini?', delCharMsg: 'Dialog milik {n} akan menjadi dialog Narator.',
     newCharName: 'Tokoh {n}',
@@ -464,6 +471,8 @@ const STR = {
     sampleLine: 'Hello, my name is {n}. Nice to meet you.', editAvatar: 'Edit face', faceOf: 'Face: {n}', all: 'All', faceF: 'Female', faceM: 'Male',
     noFaces: 'No faces for this choice yet.', done: 'Done',
     uploadFace: 'Upload from Gallery', useStudioFace: 'Back to studio photos', uploadHint: 'Photos from your gallery stay on this device only.',
+    galleryFaces: 'Photos from your gallery', noGalleryFaces: 'No gallery photos yet.', libraryFull: 'The gallery photo space is full. Remove one first.',
+    delFaceQ: 'Remove this photo from the app?', delFaceMsg: 'Characters already wearing it keep it.',
     imgBad: 'That file is not a supported image.', imgTooBig: 'Photo is too large. Maximum 10 MB.', imgFail: 'Could not process that photo. Try another one.',
     minChars: 'Add at least 2 characters to tell a story.', maxChars: 'Maximum 5 characters.', delCharQ: 'Delete this character?', delCharMsg: 'Lines spoken by {n} will become Narrator lines.',
     newCharName: 'Character {n}',
@@ -2521,6 +2530,37 @@ function processFaceImage(file) {
     img.src = url;
   });
 }
+/* ---------- the gallery face library ----------
+   A photo picked from the gallery enters the app itself: it is kept per user in
+   localStorage (not in any project) so it can be reused for any character in any
+   project without picking the file again. Deleting a library photo never breaks a
+   character, because every character keeps its own copy in avatar.custom. */
+const KEY_FACES = 'dranus:v1:' + USER_ID + ':faces';
+const FACE_LIB_MAX = 12;
+function loadFaces() {
+  try { const a = JSON.parse(LS.get(KEY_FACES) || '[]'); return Array.isArray(a) ? a.filter((f) => f && f.id && typeof f.data === 'string' && f.data.slice(0, 5) === 'data:') : []; }
+  catch (_) { return []; }
+}
+function saveFaces(list) { return LS.set(KEY_FACES, JSON.stringify(list)); }
+// Returns false when the library is full (or the save failed); the caller still applies the photo to the character.
+function addFace(data) {
+  const list = loadFaces();
+  if (list.some((f) => f.data === data)) return true; // the same photo is already in the app
+  if (list.length >= FACE_LIB_MAX) return false;
+  list.unshift({ id: uid('f'), data, addedAt: Date.now() });
+  return saveFaces(list);
+}
+function removeFace(id) { saveFaces(loadFaces().filter((f) => f.id !== id)); }
+function faceLibraryHtml(lib, c) {
+  const grid = lib.length
+    ? '<div class="opt-grid face-grid">' + lib.map((f) =>
+        '<div class="lib-face">' +
+        '<button type="button" data-libface="' + esc(f.id) + '" aria-pressed="' + ((c.avatar || {}).custom === f.data) + '" aria-label="' + esc(t('galleryFaces')) + '">' + avatarImg({ name: '', avatar: { custom: f.data } }) + '</button>' +
+        '<button type="button" class="icon-btn sm lib-face-del" data-libdel="' + esc(f.id) + '" aria-label="' + esc(t('del')) + '">' + ICON.trash + '</button>' +
+        '</div>').join('') + '</div>'
+    : '<p class="muted small" style="margin:.1rem 0 0">' + esc(t('noGalleryFaces')) + '</p>';
+  return '<div class="stack" data-testid="face-library" style="margin-top:.6rem"><span class="small muted">' + esc(t('galleryFaces')) + '</span>' + grid + '</div>';
+}
 function openAvatar(c, onChange) {
   const box = h('<div class="stack" data-testid="avatar-sheet"></div>');
   // Start on the character's own gender and age group; "Semua" widens either filter.
@@ -2532,6 +2572,7 @@ function openAvatar(c, onChange) {
       '<input type="file" accept="image/*" hidden data-upload>' +
       '<button class="btn big ghost" data-act="upload" data-testid="face-upload">' + ICON.image + esc(t('uploadFace')) + '</button>' +
       (typeof (c.avatar || {}).custom === 'string' ? '<button class="btn sm ghost" data-act="reset-face" style="align-self:center">' + esc(t('useStudioFace')) + '</button>' : '') +
+      faceLibraryHtml(loadFaces(), c) +
       segHtml('fg', ['all', 'f', 'm'], fg, (v) => t(v === 'all' ? 'all' : v === 'f' ? 'faceF' : 'faceM')) +
       segHtml('fa', ['all'].concat(AGE_GROUPS), fa, (v) => (v === 'all' ? t('all') : lbl('ageGroup', v))) +
       (list.length ? '<div class="opt-grid face-grid" data-testid="face-grid">' + list.map((p, i) => '<button type="button" data-face="' + p.id + '" aria-pressed="' + (!c.avatar.custom && c.avatar.photo === p.id) + '" aria-label="' + esc(t('faceOf', { n: c.name })) + ' ' + (i + 1) + '">' + avatarImg({ name: '', avatar: { photo: p.id } }) + '</button>').join('') + '</div>'
@@ -2546,6 +2587,7 @@ function openAvatar(c, onChange) {
       if (f.size > UPLOAD_MAX_BYTES) { toast(t('imgTooBig')); return; }
       const dataUrl = await processFaceImage(f);
       if (!dataUrl) { toast(t('imgFail')); return; }
+      if (!addFace(dataUrl)) toast(t('libraryFull')); // the photo still lands on this character
       if (!c.avatar) c.avatar = {};
       c.avatar.custom = dataUrl;
       changed(); onChange(); redraw();
@@ -2555,9 +2597,20 @@ function openAvatar(c, onChange) {
   let sh;
   const redraw = () => { const st = box.closest('.un-sheet, .fb-modal'); const top = st ? st.scrollTop : 0; draw(); if (st) st.scrollTop = top; };
   bindSegs(box, { fg: (v) => { fg = v; redraw(); }, fa: (v) => { fa = v; redraw(); } });
-  box.addEventListener('click', (e) => {
+  box.addEventListener('click', async (e) => {
     const b = e.target.closest('[data-face]');
     if (b) { c.avatar = { photo: b.dataset.face }; changed(); onChange(); redraw(); return; }
+    const lb = e.target.closest('[data-libface]');
+    if (lb) {
+      const f = loadFaces().find((x) => x.id === lb.dataset.libface);
+      if (f) { if (!c.avatar) c.avatar = {}; c.avatar.custom = f.data; changed(); onChange(); redraw(); }
+      return;
+    }
+    const ld = e.target.closest('[data-libdel]');
+    if (ld) {
+      if (await confirmDlg(t('delFaceQ'), t('delFaceMsg'), t('del'))) { removeFace(ld.dataset.libdel); redraw(); }
+      return;
+    }
     if (e.target.closest('[data-act=upload]')) { const i = box.querySelector('[data-upload]'); if (i) i.click(); return; }
     if (e.target.closest('[data-act=reset-face]')) { delete c.avatar.custom; changed(); onChange(); redraw(); return; }
     if (e.target.closest('[data-act=done]')) sh.dismiss();
