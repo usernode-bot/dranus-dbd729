@@ -23,7 +23,9 @@
       "path": "/#/baru",
       "expectSelector": "[data-testid=step-ide]",
       "visual": true,
-      "impact": ["public/index.html"]
+      "impact": [
+        "public/index.html"
+      ]
     },
     {
       "name": "Template list shows the built-in stories",
@@ -36,7 +38,9 @@
       "path": "/#/templat/surat-dari-ibu",
       "expectSelector": "[data-testid=player-canvas]",
       "visual": true,
-      "impact": ["public/index.html"]
+      "impact": [
+        "public/index.html"
+      ]
     },
     {
       "name": "Royal palace template plays",
@@ -49,7 +53,10 @@
       "path": "/#/templat/surat-dari-ibu",
       "expectSelector": "img.face-img[src*='/faces/']",
       "visual": true,
-      "impact": ["public/index.html", "public/faces/**"]
+      "impact": [
+        "public/index.html",
+        "public/faces/**"
+      ]
     },
     {
       "id": "studio.save-frame",
@@ -57,7 +64,9 @@
       "path": "/#/templat/surat-dari-ibu",
       "expectSelector": "[data-testid=save-frame]",
       "visual": true,
-      "impact": ["public/index.html"]
+      "impact": [
+        "public/index.html"
+      ]
     },
     {
       "id": "studio.save-gallery-bar",
@@ -65,7 +74,13 @@
       "path": "/#/baru",
       "expectSelector": "[data-testid=step-ide] ~ .stepfoot [data-testid=save-gallery-bar]",
       "visual": true,
-      "impact": ["public/index.html"]
+      "impact": [
+        "public/index.html"
+      ]
     }
-  ]
+  ],
+  "governance": {
+    "approvers": "invited",
+    "approvals": "default"
+  }
 }
