@@ -425,6 +425,10 @@ const STR = {
     saveGallery: 'Simpan ke Galeri', saveNow: 'Simpan sekarang', saveNowHint: 'Video siap. Ketuk Simpan sekarang untuk menyimpan ke galeri.', saveImage: 'Simpan Gambar', imageNotReady: 'Gambar belum siap. Coba lagi sebentar.',
     savedVideoDl: 'Video diunduh. Buka folder Unduhan untuk memindahkannya ke galeri.', savedImageDl: 'Gambar diunduh. Buka folder Unduhan untuk memindahkannya ke galeri.',
     aiGrantDeclined: 'Izin AI ditolak. Memakai generator bawaan.', aiCap: 'Batas AI harian tercapai. Memakai generator bawaan.',
+    outline: 'Kerangka Cerita', outlineHint: 'Tulis premis singkat, lalu susun kerangka cerita lengkap: judul, tokoh, konflik, alur, dan akhir cerita.',
+    makeOutline: 'Buat Kerangka', outlineEmpty: 'Belum ada kerangka. Tulis premis lalu tekan Buat Kerangka.',
+    logline: 'Logline', conflict: 'Konflik', plotBeats: 'Alur Cerita', ending: 'Akhir Cerita',
+    outlineReroll: 'Buat Lagi', useOutline: 'Pakai di Proyek Baru', outlineUsed: 'Kerangka dipakai di proyek baru.',
     notFound: 'Proyek tidak ditemukan.', characters: 'tokoh', scenesN: 'adegan', none: 'Tidak ada',
     voiceVariant: '{g}, nada {p}', more: 'Lainnya',
   },
@@ -484,6 +488,10 @@ const STR = {
     saveGallery: 'Save to Gallery', saveNow: 'Save now', saveNowHint: 'Video ready. Tap Save now to save it to your gallery.', saveImage: 'Save Image', imageNotReady: 'Image not ready yet. Try again in a moment.',
     savedVideoDl: 'Video downloaded. Open your Downloads folder to move it to your gallery.', savedImageDl: 'Image downloaded. Open your Downloads folder to move it to your gallery.',
     aiGrantDeclined: 'AI access declined. Using the built-in generator.', aiCap: 'Daily AI limit reached. Using the built-in generator.',
+    outline: 'Story Outline', outlineHint: 'Write a short premise, then build a full story outline: title, characters, conflict, plot beats and the ending.',
+    makeOutline: 'Create Outline', outlineEmpty: 'No outline yet. Write a premise and tap Create Outline.',
+    logline: 'Logline', conflict: 'Conflict', plotBeats: 'Plot beats', ending: 'Ending',
+    outlineReroll: 'Create Again', useOutline: 'Use in a New Project', outlineUsed: 'Outline used in a new project.',
     notFound: 'Project not found.', characters: 'characters', scenesN: 'scenes', none: 'None',
     voiceVariant: '{g}, {p} pitch', more: 'More',
   },
@@ -966,6 +974,54 @@ function offlineIdeas(genre, lang) {
   return [...out].slice(0, 5);
 }
 
+/* Fallback story-outline builder for when the platform LLM proxy is
+   unavailable (staging previews, offline runs). Same shape the AI returns. */
+const OUTLINE_BANK = {
+  id: {
+    names: ['Rani', 'Sari', 'Bayu', 'Nadia', 'Dimas', 'Laras'],
+    ages: [24, 52, 17, 30, 12, 66],
+    traits: ['sabar namun keras kepala', 'ceria dan periang', 'pendiam tetapi setia', 'berani dan suka melindungi', 'lucu dan bawel', 'tenang dan bijak'],
+    beats: [
+      { act: 1, t: 'Hari biasa', s: '{A} menjalani keseharian bersama {B}. Semuanya berjalan seperti biasa.' },
+      { act: 1, t: 'Pemicu', s: 'Sebuah kejadian mengubah hari itu. {A} tidak bisa berpura-pura tidak melihatnya.' },
+      { act: 2, t: 'Kesulitan pertama', s: '{A} mencoba menghadapi masalah, tapi {B} tidak setuju dengan caranya.' },
+      { act: 2, t: 'Titik terendah', s: 'Kesalahpahaman memuncak. {A} dan {B} memilih saling diam.' },
+      { act: 3, t: 'Kejujuran', s: '{B} mengatakan hal yang selama ini disimpannya. {A} akhirnya mengerti.' },
+      { act: 3, t: 'Penyelesaian', s: 'Mereka berbaikan dan menemukan cara baru untuk saling mengerti.' },
+    ],
+    conflicts: ['{A} ingin memperbaiki keadaan secepatnya, sementara {B} masih menyimpan luka lama.', 'Waktu terbatas, dan {A} harus memilih antara mengakui kebenaran atau kehilangan kepercayaan {B}.'],
+    endings: ['Cerita ditutup ketika {A} dan {B} akhirnya saling memahami, dan hal kecil yang memicu semuanya justru menyatukan mereka.', 'Akhirnya {A} menyadari bahwa jawaban yang dicari ada di dekatnya: orang-orang yang selalu ada untuknya.'],
+  },
+  en: {
+    names: ['June', 'Sara', 'Ben', 'Nadia', 'Dan', 'Laura'],
+    ages: [24, 52, 17, 30, 12, 66],
+    traits: ['patient yet stubborn', 'cheerful and bright', 'quiet but loyal', 'brave and protective', 'funny and fussy', 'calm and wise'],
+    beats: [
+      { act: 1, t: 'An ordinary day', s: '{A} goes through an ordinary day beside {B}. Everything feels routine.' },
+      { act: 1, t: 'The trigger', s: 'One event changes the day. {A} can no longer pretend not to see it.' },
+      { act: 2, t: 'First trouble', s: '{A} tries to face the problem, but {B} disagrees with the approach.' },
+      { act: 2, t: 'Lowest point', s: 'The misunderstanding peaks. {A} and {B} choose silence.' },
+      { act: 3, t: 'Honesty', s: '{B} finally says what has been kept inside. {A} understands at last.' },
+      { act: 3, t: 'Resolution', s: 'They make up and find a new way to understand each other.' },
+    ],
+    conflicts: ['{A} wants to fix things quickly, while {B} still carries an old wound.', 'Time is short, and {A} must choose between telling the truth or losing {B}\'s trust.'],
+    endings: ['The story closes when {A} and {B} finally understand each other, and the small thing that started it all brings them together.', 'In the end {A} sees that the answer was close all along: the people who have always been there.'],
+  },
+};
+function offlineOutline(premise, genre, lang) {
+  const ob = OUTLINE_BANK[lang] || OUTLINE_BANK.id;
+  const p = String(premise || '').trim().replace(/\s+/g, ' ').replace(/[.!?]+$/, '');
+  const fill = (s) => s.replace(/\{A\}/g, ob.names[0]).replace(/\{B\}/g, ob.names[1]);
+  const words = p.split(' ').filter((w) => !['seorang', 'sebuah', 'yang', 'a', 'an', 'the', 'who'].includes(w.toLowerCase()));
+  const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+  const title = (words.slice(0, 4).join(' ') || lbl('genre', genre)).slice(0, 60);
+  return {
+    title: cap(title), logline: p || '', conflict: fill(pickR(ob.conflicts)), ending: fill(pickR(ob.endings)),
+    characters: ob.names.slice(0, 3).map((name, i) => ({ name, age: ob.ages[i], role: i === 0 ? 'utama' : 'pendukung', traits: ob.traits[i] })),
+    beats: ob.beats.map((b) => ({ act: b.act, title: b.t, summary: fill(b.s) })),
+  };
+}
+
 const SCRIPT_BANK = {
   id: {
     open: ['{B}, kamu sudah lama di sini?', 'Pagi, {B}. Ada kabar apa hari ini?', '{A}! Akhirnya kamu datang juga.', 'Tumben kamu datang sepagi ini, {A}.', 'Aku senang bisa bertemu lagi, {B}.'],
@@ -1136,6 +1192,26 @@ async function generateScript(data) {
     if (scenes.length) return { scenes, dialogues, source: 'ai' };
   }
   return Object.assign(offlineScript(data), { source: 'gen' });
+}
+async function generateOutline(input) {
+  const lang = LANG === 'en' ? 'en' : 'id';
+  const i = input || {};
+  const ai = await aiGenerate('outline', lang, { premise: i.premise, genre: i.genre, tone: i.tone });
+  if (ai && String(ai.title || '').trim() && Array.isArray(ai.beats) && ai.beats.length) {
+    return {
+      source: 'ai',
+      title: String(ai.title).trim().slice(0, 80), logline: String(ai.logline || '').trim().slice(0, 200),
+      conflict: String(ai.conflict || '').trim().slice(0, 500), ending: String(ai.ending || '').trim().slice(0, 500),
+      characters: (Array.isArray(ai.characters) ? ai.characters : []).slice(0, 5).map((c) => ({
+        name: String(c.name || '').trim().slice(0, 40) || '?', age: clamp(parseInt(c.age, 10) || 0, 0, 120),
+        role: ROLES.includes(c.role) ? c.role : 'pendukung', traits: String(c.traits || '').trim().slice(0, 80),
+      })),
+      beats: ai.beats.slice(0, 9).map((b) => ({
+        act: [1, 2, 3].includes(+b.act) ? +b.act : 2, title: String(b.title || '').trim().slice(0, 60), summary: String(b.summary || '').trim().slice(0, 300),
+      })).filter((b) => b.summary),
+    };
+  }
+  return Object.assign(offlineOutline(i.premise, i.genre, lang), { source: 'gen' });
 }
 
 /* ---------- built-in templates ----------
@@ -2195,6 +2271,7 @@ function parseRoute() {
   const parts = hsh.split('/').filter(Boolean).map(decodeURIComponent);
   if (!parts.length) return { name: 'home' };
   if (parts[0] === 'baru') return { name: 'new' };
+  if (parts[0] === 'cerita') return { name: 'cerita' };
   if (parts[0] === 'templat') return parts[1] ? { name: 'tpl', id: parts[1] } : { name: 'tpls' };
   if (parts[0] === 'p' && parts[1]) return { name: 'proj', id: parts[1], step: STEP_KEYS.includes(parts[2]) ? parts[2] : 'ide' };
   return { name: 'home' };
@@ -2219,6 +2296,7 @@ function render() {
   App.preview = false;
   if (r.name !== 'proj' || (App.exported && App.exported.projectId !== r.id)) { dropExport(); App.autoExport = false; }
   if (r.name === 'home') { App.data = null; return viewHome(root); }
+  if (r.name === 'cerita') { App.data = null; return viewOutline(root); }
   if (r.name === 'tpls') { App.data = null; return viewTemplates(root); }
   if (r.name === 'tpl') return viewTemplatePreview(root, r.id);
   if (r.name === 'proj') {
@@ -2250,7 +2328,7 @@ function viewHome(root) {
   const idx = loadIndex();
   root.innerHTML = homeHeader() + '<main class="main home stack" data-testid="home" style="gap:1.4rem">' +
     '<section class="hero"><span class="chip">' + esc(t('shortFilm')) + '</span><h2>' + esc(t('app')) + '</h2><p class="muted" style="margin:0 0 1rem">' + esc(t('tagline')) + '</p>' +
-    '<div class="row wrap" style="justify-content:center"><a class="btn primary big" href="#/baru" data-testid="home-start">' + ICON.idea + esc(t('startIdea')) + '</a><a class="btn big" href="#/templat">' + ICON.film + esc(t('pickTemplate')) + '</a></div></section>' +
+    '<div class="row wrap" style="justify-content:center"><a class="btn primary big" href="#/baru" data-testid="home-start">' + ICON.idea + esc(t('startIdea')) + '</a><a class="btn big" href="#/cerita" data-testid="home-outline">' + ICON.wand + esc(t('outline')) + '</a><a class="btn big" href="#/templat">' + ICON.film + esc(t('pickTemplate')) + '</a></div></section>' +
     '<section><div class="row" style="margin-bottom:.6rem"><h2 class="sec-title grow" style="margin:0">' + esc(t('myProjects')) + '</h2><button class="btn sm" data-act="import">' + ICON.upload + esc(t('importProject')) + '</button></div>' +
     (idx.length ? '<div class="proj-grid">' + idx.map(projCard).join('') + '</div>'
       : '<div class="empty" data-testid="empty-projects">' + ICON.film2.replace('<svg', '<svg style="width:40px;height:40px;color:var(--gold)"') + '<p style="font-weight:600;margin:.5rem 0 1rem">' + esc(t('emptyProjects')) + '</p><div class="row wrap" style="justify-content:center"><a class="btn primary" href="#/baru">' + esc(t('startIdea')) + '</a><a class="btn" href="#/templat">' + esc(t('pickTemplate')) + '</a></div></div>') +
@@ -2316,6 +2394,69 @@ function viewTemplatePreview(root, id) {
   bindHeader(root);
   App.player = new Player($('[data-ref=player]', root), () => App.data, { editable: false });
   on(root, '[data-act=use]', 'click', () => useTemplate(tpl));
+}
+
+/* ---------- story outline (AI premise -> full outline) ---------- */
+const Outline = { premise: '', genre: 'keluarga', tone: 'hangat', result: null, busy: false };
+function outlineResultHtml(o) {
+  const r = o.result;
+  const sec = (label, text) => (text ? '<h3 class="sec-title" style="margin:.2rem 0 0">' + esc(label) + '</h3><p style="margin:.25rem 0 0">' + esc(text) + '</p>' : '');
+  return '<div class="card stack" data-testid="outline-card">' +
+    '<div class="row wrap"><span class="chip">' + esc(t(r.source === 'ai' ? 'byAi' : 'byGen')) + '</span></div>' +
+    '<h2 class="title-font" style="margin:0;color:var(--gold);font-size:1.3rem">' + esc(r.title || t('untitled')) + '</h2>' +
+    (r.logline ? '<p class="muted" style="margin:0">' + esc(r.logline) + '</p>' : '') +
+    (r.characters.length ? '<div class="stack" style="gap:.35rem"><h3 class="sec-title" style="margin:.2rem 0 0">' + esc(t('cast')) + '</h3>' +
+      r.characters.map((c) => '<div class="row wrap" style="gap:.4rem"><b>' + esc(c.name) + '</b><span class="chip">' + esc(lbl('role', c.role)) + '</span><span class="small muted">' + esc(c.traits) + '</span></div>').join('') + '</div>' : '') +
+    sec(t('conflict'), r.conflict) +
+    (r.beats.length ? '<div class="stack" style="gap:.5rem"><h3 class="sec-title" style="margin:.2rem 0 0">' + esc(t('plotBeats')) + '</h3>' +
+      [1, 2, 3].map((a) => {
+        const bs = r.beats.filter((x) => x.act === a);
+        return bs.length ? '<div class="act"><h3>' + esc(t('acts')[a - 1]) + '</h3>' + bs.map((x) => '<p style="margin:0 0 .3rem"><b>' + esc(x.title) + '</b>' + (x.title ? '. ' : '') + esc(x.summary) + '</p>').join('') + '</div>' : '';
+      }).join('') + '</div>' : '') +
+    sec(t('ending'), r.ending) +
+    '<div class="row wrap" style="margin-top:.3rem"><button class="btn" data-act="orun">' + ICON.replay + esc(t('outlineReroll')) + '</button>' +
+    '<button class="btn primary" data-act="ouse" data-testid="use-outline">' + ICON.copy + esc(t('useOutline')) + '</button></div></div>';
+}
+function viewOutline(root) {
+  const o = Outline;
+  root.innerHTML = simpleHeader('#/', t('outline')) + '<main class="main home stack" data-testid="outline" style="gap:1rem">' +
+    '<div class="card stack">' +
+    '<p class="small muted" style="margin:0">' + esc(t('outlineHint')) + '</p>' +
+    '<label class="fld">' + esc(t('premise')) + '<textarea class="inp" data-testid="outline-premise" rows="3" maxlength="300" placeholder="' + esc(t('premisePh')) + '">' + esc(o.premise) + '</textarea></label>' +
+    '<div class="fld"><span>' + esc(t('genre')) + '</span>' + segHtml('ogenre', GENRES, o.genre, (v) => lbl('genre', v)) + '</div>' +
+    '<div class="fld"><span>' + esc(t('tone')) + '</span>' + segHtml('otone', TONES, o.tone, (v) => lbl('tone', v)) + '</div>' +
+    '<button class="btn primary big" data-act="make-outline" data-testid="make-outline"' + (o.premise.trim() ? '' : ' disabled') + '>' + ICON.wand + esc(t('makeOutline')) + '</button></div>' +
+    '<div data-ref="ores" data-testid="outline-result"></div></main>';
+  bindHeader(root);
+  const res = $('[data-ref=ores]', root);
+  const btn = $('[data-act=make-outline]', root);
+  const premEl = $('[data-testid=outline-premise]', root);
+  const drawRes = () => {
+    res.innerHTML = o.result ? outlineResultHtml(o) : '<div class="empty muted" data-testid="outline-empty">' + esc(t('outlineEmpty')) + '</div>';
+    const ub = $('[data-act=ouse]', res);
+    if (ub) ub.onclick = () => {
+      const r = o.result; if (!r) return;
+      const d = newProject({ title: r.title || '', genre: o.genre, tone: o.tone, premise: o.premise.trim() });
+      if (!writeProject(d)) return;
+      toast(t('outlineUsed'));
+      go('#/p/' + encodeURIComponent(d.project.id) + '/ide');
+    };
+  };
+  drawRes();
+  premEl.addEventListener('input', () => { o.premise = premEl.value; btn.disabled = !o.premise.trim() || o.busy; });
+  bindSegs(root, { ogenre: (v) => { o.genre = v; }, otone: (v) => { o.tone = v; } });
+  const make = async () => {
+    if (o.busy || !o.premise.trim()) return;
+    o.busy = true; btn.disabled = true; btn.classList.add('pulse');
+    res.innerHTML = '<div class="card stack" data-testid="outline-loading"><div class="row"><span class="spinner"></span><span class="muted">' + esc(t('generating')) + '</span></div></div>';
+    res.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    o.result = await generateOutline({ premise: o.premise, genre: o.genre, tone: o.tone });
+    o.busy = false; btn.disabled = false; btn.classList.remove('pulse');
+    drawRes();
+  };
+  // Direct binding: the #app root outlives renders, so delegated handlers there would pile up.
+  btn.onclick = make;
+  on(root, '[data-act=orun]', 'click', () => make());
 }
 
 /* ---------- wizard shell ---------- */
