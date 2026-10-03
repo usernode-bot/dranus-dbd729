@@ -133,6 +133,12 @@ function aiPrompt(kind, lang, input) {
 Genre: ${i.genre || ''}. Tone: ${i.tone || ''}. Title (may be empty): ${i.title || ''}.
 Return {"ideas":["...","...","...","...","..."]}.`;
   }
+  if (kind === 'outline') {
+    return `Write a story outline for a short drama film in ${language}, built from this premise: ${i.premise || ''}.
+Genre: ${i.genre || ''}. Tone: ${i.tone || ''}.
+Return {"title":"short film title","logline":"one sentence","characters":[{"name":"...","age":30,"role":"utama|pendukung","traits":"two or three traits"}],"conflict":"two sentences on the central conflict","beats":[{"act":1,"title":"beat name","summary":"one or two sentences"}],"ending":"two sentences on how the story ends"}.
+Give 2 to 5 characters and 5 to 7 beats spread across acts 1, 2 and 3.`;
+  }
   return `Write a three-act script for a short drama film in ${language}.
 Title: ${i.title || ''}. Genre: ${i.genre || ''}. Tone: ${i.tone || ''}. Premise: ${i.premise || ''}.
 Target length: ${i.targetMinutes || 1} minute(s), so about ${i.sceneCount || 3} scenes with ${i.linesPerScene || 4} short dialogue lines each.
@@ -153,7 +159,7 @@ app.get('/api/ai/status', (_req, res) => res.json({ llm: LLM_ENABLED }));
 app.post('/api/ai/generate', async (req, res) => {
   if (!LLM_ENABLED) return res.status(503).json({ code: 'llm_unavailable' });
   const { kind, lang, input } = req.body || {};
-  if (kind !== 'ideas' && kind !== 'script') return res.status(400).json({ code: 'bad_kind' });
+  if (kind !== 'ideas' && kind !== 'script' && kind !== 'outline') return res.status(400).json({ code: 'bad_kind' });
   if (JSON.stringify(input || {}).length > 8192) return res.status(413).json({ code: 'too_large' });
   try {
     const upstream = await fetch(`${process.env.USERNODE_LLM_PROXY_URL}/v1/messages`, {
@@ -166,7 +172,7 @@ app.post('/api/ai/generate', async (req, res) => {
       },
       body: JSON.stringify({
         model: LLM_MODEL,
-        max_tokens: kind === 'script' ? 4000 : 800,
+        max_tokens: kind === 'script' ? 4000 : kind === 'outline' ? 1500 : 800,
         system: AI_SYSTEM,
         messages: [{ role: 'user', content: aiPrompt(kind, lang, input) }],
       }),
