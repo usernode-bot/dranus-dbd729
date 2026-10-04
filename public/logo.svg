@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <title>DRANUS</title>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2B1B7A"/>
+      <stop offset="0.55" stop-color="#8A3B8F"/>
+      <stop offset="1" stop-color="#FF7A2F"/>
+    </linearGradient>
+    <radialGradient id="gloss" cx="0.25" cy="0.12" r="0.8">
+      <stop offset="0" stop-color="#fff" stop-opacity="0.2"/>
+      <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="screen" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFF6C9"/>
+      <stop offset="1" stop-color="#FFC24D"/>
+    </linearGradient>
+    <filter id="shadow" filterUnits="userSpaceOnUse" x="0" y="0" width="512" height="512">
+      <feDropShadow dx="0" dy="10" stdDeviation="12" flood-color="#14093D" flood-opacity="0.35"/>
+    </filter>
+    <filter id="glow" filterUnits="userSpaceOnUse" x="0" y="0" width="512" height="512">
+      <feGaussianBlur stdDeviation="10"/>
+    </filter>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+  <rect width="512" height="512" rx="112" fill="url(#gloss)"/>
+  <!-- House silhouette: roof peak and body as one shape, corners softened by a matching stroke. -->
+  <path filter="url(#shadow)" d="M256 106 L424 248 H384 V410 H128 V248 H88 Z"
+        fill="#FFFFFF" stroke="#FFFFFF" stroke-width="20" stroke-linejoin="round"/>
+  <!-- Window glowing like a movie screen. -->
+  <rect x="164" y="254" width="184" height="124" rx="16" fill="#FFB238" filter="url(#glow)" opacity="0.9"/>
+  <rect x="164" y="254" width="184" height="124" rx="16" fill="#2B1B7A"/>
+  <rect x="176" y="266" width="160" height="100" rx="8" fill="url(#screen)"/>
+  <path d="M241 291 L241 341 L284 316 Z" fill="#2B1B7A" stroke="#2B1B7A" stroke-width="8" stroke-linejoin="round" opacity="0.9"/>
+</svg>
