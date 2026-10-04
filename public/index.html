@@ -63,7 +63,7 @@
   })();
   </script>
   <title>Studio Drama Pendek</title>
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='8' y='34' width='84' height='56' rx='6' fill='%23d4a64a'/><path d='M8 18 L88 8 L92 26 L12 36 Z' fill='%237a1f2b'/><path d='M24 16 L34 32 M46 13 L56 29 M68 10 L78 26' stroke='%23d4a64a' stroke-width='6'/></svg>">
+  <link rel="icon" type="image/svg+xml" href="/logo.svg">
   <link rel="stylesheet" href="/tailwind.css">
   <link rel="stylesheet" href="/usernode-native/v1/native.css">
   <!-- The platform bridge, centrally hosted and loaded by RELATIVE path. Never
@@ -139,6 +139,7 @@
       padding: calc(.5rem + var(--safe-t)) .75rem .5rem; }
     .hdr-in { max-width: 1100px; margin: 0 auto; display: flex; align-items: center; gap: .5rem; }
     .brand { display: flex; align-items: center; gap: .5rem; min-width: 0; }
+    .brand-logo { width: 28px; height: 28px; flex: none; }
     .brand h1 { font-size: 1rem; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--gold); }
     .proj-name { background: transparent; border: 1px solid transparent; border-radius: 10px; padding: .4rem .5rem;
       font-weight: 600; font-size: 1rem; min-width: 0; width: 100%; }
@@ -247,6 +248,11 @@
     .face-grid { grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); }
     .face-grid button { padding: 0; overflow: hidden; aspect-ratio: 4 / 5; }
     .face-grid button .face-img { border-radius: 10px; }
+    .lib-face { position: relative; }
+    .lib-face > button { display: block; width: 100%; border: 2px solid var(--line); background: var(--bg2); border-radius: 12px; padding: 0; overflow: hidden; aspect-ratio: 4 / 5; cursor: pointer; min-height: 44px; }
+    .lib-face > button[aria-pressed="true"] { border-color: var(--gold); }
+    .lib-face > button .face-img { border-radius: 10px; }
+    .lib-face-del { position: absolute; top: -6px; right: -6px; width: 28px; height: 28px; min-width: 28px; background: var(--panel); border: 1px solid var(--line); border-radius: 50%; }
     .swatches { display: flex; flex-wrap: wrap; gap: .45rem; }
     .swatches button { width: 40px; height: 40px; border-radius: 50%; border: 3px solid transparent; cursor: pointer; box-shadow: inset 0 0 0 1px rgba(0,0,0,.2); }
     .swatches button[aria-pressed="true"] { border-color: var(--gold); }
@@ -323,6 +329,13 @@
     .fb-modal { background: var(--panel); width: 100%; max-width: 640px; max-height: 88vh; overflow: auto; border-radius: 18px 18px 0 0; padding: 1rem 1rem calc(1rem + var(--safe-b)); }
     @media (min-width: 700px) { .fb-modal-bg { align-items: center; } .fb-modal { border-radius: 18px; } }
     .sheet-body { padding: .25rem .25rem 1rem; color: var(--text); }
+    /* The native kit anchors the sheet to the bottom edge, so tall content
+       would clip off the top of the screen. Cap the body and scroll it
+       instead: the sheet keeps pan-y so touch drags scroll the body (the
+       grabber re-claims none for drag-to-dismiss), as the platform's own
+       pan-y sheets do. */
+    .un-sheet { touch-action: pan-y; }
+    .un-sheet .sheet-body { max-height: calc(100vh - 72px); max-height: calc(100dvh - 72px); overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
     .sheet-body h3 { font-family: var(--font-title); letter-spacing: .08em; text-transform: uppercase; margin: 0 0 .75rem; font-size: 1.05rem; color: var(--gold); }
     .idea { text-align: left; width: 100%; padding: .8rem .9rem; border-radius: 12px; border: 1px solid var(--line); background: var(--bg2); cursor: pointer; font-size: .95rem; line-height: 1.4; }
     .idea:hover { border-color: var(--gold); }
@@ -394,6 +407,10 @@ const STR = {
     pitch: 'Nada', high: 'Tinggi', normal: 'Sedang', low: 'Rendah', rate: 'Kecepatan', listen: 'Dengar',
     sampleLine: 'Halo, nama saya {n}. Senang bertemu denganmu.', editAvatar: 'Ubah wajah', faceOf: 'Wajah: {n}', all: 'Semua', faceF: 'Perempuan', faceM: 'Laki-laki',
     noFaces: 'Belum ada wajah untuk pilihan ini.', done: 'Selesai',
+    uploadFace: 'Unggah dari Galeri', useStudioFace: 'Kembali ke foto studio', uploadHint: 'Foto dari galerimu hanya tersimpan di perangkat ini.',
+    galleryFaces: 'Foto dari galeri', noGalleryFaces: 'Belum ada foto dari galeri.', libraryFull: 'Ruang foto galeri penuh. Hapus salah satu dulu.',
+    delFaceQ: 'Hapus foto ini dari aplikasi?', delFaceMsg: 'Tokoh yang sudah memakainya tetap memakainya.',
+    imgBad: 'File itu bukan gambar yang didukung.', imgTooBig: 'Foto terlalu besar. Maksimal 10 MB.', imgFail: 'Foto gagal diproses. Coba foto lain.',
     minChars: 'Tambah minimal 2 tokoh agar cerita berjalan.', maxChars: 'Maksimal 5 tokoh.', delCharQ: 'Hapus tokoh ini?', delCharMsg: 'Dialog milik {n} akan menjadi dialog Narator.',
     newCharName: 'Tokoh {n}',
     acts: ['Babak 1: Pembuka', 'Babak 2: Konflik', 'Babak 3: Penyelesaian'], scene: 'Adegan', addScene: 'Tambah Adegan',
@@ -453,6 +470,10 @@ const STR = {
     pitch: 'Pitch', high: 'High', normal: 'Medium', low: 'Low', rate: 'Speed', listen: 'Listen',
     sampleLine: 'Hello, my name is {n}. Nice to meet you.', editAvatar: 'Edit face', faceOf: 'Face: {n}', all: 'All', faceF: 'Female', faceM: 'Male',
     noFaces: 'No faces for this choice yet.', done: 'Done',
+    uploadFace: 'Upload from Gallery', useStudioFace: 'Back to studio photos', uploadHint: 'Photos from your gallery stay on this device only.',
+    galleryFaces: 'Photos from your gallery', noGalleryFaces: 'No gallery photos yet.', libraryFull: 'The gallery photo space is full. Remove one first.',
+    delFaceQ: 'Remove this photo from the app?', delFaceMsg: 'Characters already wearing it keep it.',
+    imgBad: 'That file is not a supported image.', imgTooBig: 'Photo is too large. Maximum 10 MB.', imgFail: 'Could not process that photo. Try another one.',
     minChars: 'Add at least 2 characters to tell a story.', maxChars: 'Maximum 5 characters.', delCharQ: 'Delete this character?', delCharMsg: 'Lines spoken by {n} will become Narrator lines.',
     newCharName: 'Character {n}',
     acts: ['Act 1: Opening', 'Act 2: Conflict', 'Act 3: Resolution'], scene: 'Scene', addScene: 'Add Scene',
@@ -537,7 +558,7 @@ const TRANS = ['potong', 'fade', 'dissolve'];
 const MUSICS = ['none', 'sedih', 'tegang', 'ceria', 'tenang', 'guzheng'];
 const SFXS = ['pintu', 'hujan', 'langkah', 'telepon'];
 const AGE_GROUPS = ['anak', 'remaja', 'dewasa', 'lansia'];
-const SCHEMA_VERSION = 2;
+const SCHEMA_VERSION = 3;
 const MAX_LINE = 160;
 
 /* Locations typed as free text are matched to an illustration by keyword. */
@@ -837,7 +858,8 @@ function migrate(data) {
   // v1 characters were drawn avatars; give each one the closest portrait photo.
   data.characters.forEach((c) => {
     delete c.costumeColor;
-    if (c.avatar && portraitById(c.avatar.photo)) return;
+    if (c.avatar && typeof c.avatar.custom !== 'string') delete c.avatar.custom;
+    if (c.avatar && (c.avatar.custom || portraitById(c.avatar.photo))) return;
     c.avatar = { photo: pickPortrait(c, data.characters.map((x) => x !== c && x.avatar && x.avatar.photo).filter(Boolean)) };
   });
   data.project.schemaVersion = SCHEMA_VERSION;
@@ -1316,11 +1338,16 @@ function shade(hex, amt) {
   return '#' + [f(r), f(g), f(b)].map((c) => c.toString(16).padStart(2, '0')).join('');
 }
 
-/* A character's face: its portrait photo, or a plain silhouette while it loads or if it is missing. */
+/* A character's face: its portrait photo, or a plain silhouette while it loads or if it is missing.
+   An uploaded gallery photo (avatar.custom, a data URL) wins over the studio portrait. */
 const FACE_FALLBACK = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 100"><rect width="80" height="100" fill="#8d8a86"/><circle cx="40" cy="38" r="17" fill="#c9c5bf"/><path d="M8 100 Q10 66 40 64 Q70 66 72 100 Z" fill="#c9c5bf"/></svg>');
+function faceSrc(c) {
+  const a = c.avatar || {};
+  if (typeof a.custom === 'string' && a.custom.slice(0, 5) === 'data:') return a.custom;
+  return portraitById(a.photo) ? portraitUrl(a.photo) : FACE_FALLBACK;
+}
 function avatarImg(c) {
-  const id = (c.avatar || {}).photo;
-  return '<img class="face-img" src="' + (portraitById(id) ? portraitUrl(id) : FACE_FALLBACK) + '" alt="' + esc(c.name || '') + '" loading="lazy" decoding="async" onerror="this.onerror=null;this.src=FACE_FALLBACK">';
+  return '<img class="face-img" src="' + esc(faceSrc(c)) + '" alt="' + esc(c.name || '') + '" loading="lazy" decoding="async" onerror="this.onerror=null;this.src=FACE_FALLBACK">';
 }
 
 /* Backgrounds drawn in a 1600 x 900 box. */
@@ -1478,8 +1505,7 @@ function frameSVG(data, p, aspect, opts) {
   // The player rasterises this SVG from a blob, where linked images never load, so it draws the faces itself.
   if (!opts.bgOnly) {
     shotLayout(data, p, aspect).forEach((f) => {
-      const id = (f.c.avatar || {}).photo;
-      s += '<image href="' + esc(portraitById(id) ? portraitUrl(id) : FACE_FALLBACK) + '" x="' + f.x + '" y="' + f.y + '" width="' + f.w + '" height="' + f.h + '" preserveAspectRatio="xMidYMid slice" mask="url(#' + fm + ')"><title>' + esc(f.c.name) + '</title></image>';
+      s += '<image href="' + esc(faceSrc(f.c)) + '" x="' + f.x + '" y="' + f.y + '" width="' + f.w + '" height="' + f.h + '" preserveAspectRatio="xMidYMid slice" mask="url(#' + fm + ')"><title>' + esc(f.c.name) + '</title></image>';
     });
     s += '<rect width="' + W + '" height="' + H + '" fill="url(#' + vg + ')"/>';
   }
@@ -1649,10 +1675,10 @@ function svgImage(svg) {
   if (imgCache.size > 300) imgCache.delete(imgCache.keys().next().value);
   return p;
 }
-/* Same-origin portrait photos, decoded once and shared by every frame. */
+/* Same-origin portrait photos and uploaded faces, decoded once and shared by every frame. */
 const faceCache = new Map();
-function faceImage(id) {
-  const src = portraitById(id) ? portraitUrl(id) : FACE_FALLBACK;
+function faceImage(c) {
+  const src = faceSrc(c);
   if (faceCache.has(src)) return faceCache.get(src);
   const p = new Promise((res) => {
     const img = new Image();
@@ -1681,7 +1707,8 @@ const shotCache = new Map();
 function shotImage(data, p, aspect) {
   const layout = shotLayout(data, p, aspect);
   const svg = frameSVG(data, p, aspect, { bgOnly: true });
-  const key = svg + JSON.stringify(layout.map((f) => [(f.c.avatar || {}).photo, f.x, f.w]));
+  // Two uploads with the same studio photo differ, so hash a custom photo into the key.
+  const key = svg + JSON.stringify(layout.map((f) => [((f.c.avatar || {}).custom) ? 'u' + hashStr(f.c.avatar.custom) : (f.c.avatar || {}).photo, f.x, f.w]));
   if (shotCache.has(key)) return shotCache.get(key);
   const pr = composeShot(svg, layout, aspect);
   shotCache.set(key, pr);
@@ -1690,7 +1717,7 @@ function shotImage(data, p, aspect) {
 }
 async function composeShot(svg, layout, aspect) {
   const W = aspect === '9:16' ? 900 : 1600, H = aspect === '9:16' ? 1600 : 900;
-  const [bg, faces] = await Promise.all([svgImage(svg), Promise.all(layout.map((f) => faceImage((f.c.avatar || {}).photo)))]);
+  const [bg, faces] = await Promise.all([svgImage(svg), Promise.all(layout.map((f) => faceImage(f.c)))]);
   if (!bg) return null;
   const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
   const ctx = cv.getContext('2d');
@@ -2194,7 +2221,7 @@ function parseRoute() {
   const parts = hsh.split('/').filter(Boolean).map(decodeURIComponent);
   if (!parts.length) return { name: 'home' };
   if (parts[0] === 'baru') return { name: 'new' };
-  if (parts[0] === 'templat') return parts[1] ? { name: 'tpl', id: parts[1] } : { name: 'tpls' };
+  if (parts[0] === 'templat') return parts[1] ? { name: 'tpl', id: parts[1], step: parts[2] || '' } : { name: 'tpls' };
   if (parts[0] === 'p' && parts[1]) return { name: 'proj', id: parts[1], step: STEP_KEYS.includes(parts[2]) ? parts[2] : 'ide' };
   return { name: 'home' };
 }
@@ -2219,7 +2246,7 @@ function render() {
   if (r.name !== 'proj' || (App.exported && App.exported.projectId !== r.id)) { dropExport(); App.autoExport = false; }
   if (r.name === 'home') { App.data = null; return viewHome(root); }
   if (r.name === 'tpls') { App.data = null; return viewTemplates(root); }
-  if (r.name === 'tpl') return viewTemplatePreview(root, r.id);
+  if (r.name === 'tpl') return viewTemplatePreview(root, r.id, r.step);
   if (r.name === 'proj') {
     if (!App.data || App.data.project.id !== r.id) App.data = readProject(r.id);
     if (!App.data) { toast(t('notFound')); go('#/', true); return; }
@@ -2243,7 +2270,7 @@ function tplCard(tpl) {
     '<div class="muted">' + esc(tplDesc(tpl)) + '</div></div></button>';
 }
 function homeHeader() {
-  return '<header class="hdr"><div class="hdr-in"><div class="brand grow">' + ICON.film2.replace('<svg', '<svg style="width:26px;height:26px;color:var(--gold)"') + '<h1 class="title-font">' + esc(t('app')) + '</h1></div>' + langBtn() + themeBtn() + '</div></header>';
+  return '<header class="hdr"><div class="hdr-in"><div class="brand grow"><img class="brand-logo" src="/logo.svg" alt="" width="28" height="28" data-testid="app-logo"><h1 class="title-font">' + esc(t('app')) + '</h1></div>' + langBtn() + themeBtn() + '</div></header>';
 }
 function viewHome(root) {
   const idx = loadIndex();
@@ -2299,12 +2326,22 @@ function useTemplate(tpl) {
   reconcileShots(c);
   if (writeProject(c)) { toast(t('templateUsed')); go('#/p/' + c.project.id + '/ide'); }
 }
-function viewTemplatePreview(root, id) {
+function viewTemplatePreview(root, id, step) {
   const tpl = tplById(id);
   if (!tpl) { go('#/templat', true); return; }
   if (!App.data || App.data.project.id !== 'tpl-' + id) App.data = buildTemplate(tpl);
   App.preview = true;
   const d = App.data;
+  // A step on the URL opens the template in the wizard, still preview-only (nothing is saved):
+  // a stable deep link for trying faces on a template, e.g. /#/templat/surat-dari-ibu/wajah.
+  if (step && (STEP_KEYS.includes(step) || step === 'wajah')) {
+    viewWizard(root, step === 'wajah' ? 'tokoh' : step);
+    if (step === 'wajah' && d.characters.length) {
+      const c = d.characters[0];
+      openAvatar(c, () => { const card = $('[data-char="' + c.id + '"]', root); if (card) $('.avatar-box', card).innerHTML = avatarImg(c); });
+    }
+    return;
+  }
   root.innerHTML = simpleHeader('#/templat', t('templatePreview')) + '<main class="main home stack" data-testid="template-preview">' +
     '<div><h2 class="title-font" style="margin:0;color:var(--gold);font-size:1.4rem">' + esc(tplTitle(tpl)) + '</h2><p class="muted" style="margin:.3rem 0 .5rem">' + esc(tplDesc(tpl)) + '</p>' +
     '<div class="row wrap"><span class="chip">' + esc(lbl('genre', tpl.genre)) + '</span><span class="chip">' + esc(lbl('tone', tpl.tone)) + '</span><span class="chip">' + d.characters.length + ' ' + esc(t('characters')) + '</span><span class="chip">' + d.scenes.length + ' ' + esc(t('scenesN')) + '</span></div></div>' +
@@ -2323,16 +2360,19 @@ function viewWizard(root, step) {
   d.project.visited = d.project.visited || {};
   if (step === 'storyboard' || step === 'suara' || step === 'putar') { d.project.visited[step] = true; reconcileShots(d); changed(); }
   const pid = encodeURIComponent(d.project.id);
+  // In template preview the wizard is not a saved project, so its step links
+  // stay on the preview route instead of pointing at a project id that is not in storage.
+  const stepHref = App.preview ? (k) => '#/templat/' + d.project.id.replace(/^tpl-/, '') + '/' + k : (k) => '#/p/' + pid + '/' + k;
   root.innerHTML = '<header class="hdr"><div class="hdr-in"><a class="icon-btn" href="#/" aria-label="' + esc(t('home')) + '" title="' + esc(t('home')) + '">' + ICON.back + '</a>' +
     '<input class="proj-name grow" data-ref="pname" value="' + esc(d.project.title) + '" placeholder="' + esc(t('untitled')) + '" aria-label="' + esc(t('title')) + '">' +
     '<button class="btn sm primary" data-act="save">' + ICON.save + '<span>' + esc(t('save')) + '</span></button>' + langBtn() + themeBtn() + '</div>' +
     '<div class="progress" aria-hidden="true">' + STEP_KEYS.map((k, i) => '<span class="' + (i === si ? 'cur' : stepDone(d, k) ? 'done' : '') + '"></span>').join('') + '</div></header>' +
-    '<nav class="stepnav" aria-label="Wizard">' + STEP_KEYS.map((k, i) => '<a href="#/p/' + pid + '/' + k + '" class="' + (i === si ? 'cur' : '') + '"' + (i === si ? ' aria-current="step"' : '') + '>' + STEP_ICONS[i] + '<span>' + esc(t('steps')[i]) + '</span>' + (stepDone(d, k) && i !== si ? '<i class="dot"></i>' : '') + '</a>').join('') + '</nav>' +
+    '<nav class="stepnav" aria-label="Wizard">' + STEP_KEYS.map((k, i) => '<a href="' + stepHref(k) + '" class="' + (i === si ? 'cur' : '') + '"' + (i === si ? ' aria-current="step"' : '') + '>' + STEP_ICONS[i] + '<span>' + esc(t('steps')[i]) + '</span>' + (stepDone(d, k) && i !== si ? '<i class="dot"></i>' : '') + '</a>').join('') + '</nav>' +
     '<main class="main stack" data-ref="content" data-testid="step-' + step + '">' +
     '<div class="step-head row"><div class="grow"><h2>' + (si + 1) + '. ' + esc(t('stepTitles')[si]) + '</h2><p class="muted small">' + esc(t('stepHints')[si]) + '</p></div>' + (si >= 2 ? durBadge(d) : '') + '</div>' +
     '<div data-ref="body" class="stack"></div></main>' +
-    '<div class="stepfoot"><div class="in">' + (si > 0 ? '<a class="btn" href="#/p/' + pid + '/' + STEP_KEYS[si - 1] + '">' + ICON.back + esc(t('back')) + '</a>' : '<a class="btn" href="#/">' + ICON.back + esc(t('home')) + '</a>') +
-    '<span class="grow"></span><button class="btn gold' + (si < 5 ? ' compact' : '') + '" data-act="gallery" data-testid="save-gallery-bar" aria-label="' + esc(t('saveGallery')) + '">' + ICON.image + '<span class="lbl">' + esc(t('saveGallery')) + '</span></button>' + (si < 5 ? '<a class="btn primary" href="#/p/' + pid + '/' + STEP_KEYS[si + 1] + '" data-testid="next">' + esc(t('next')) + ' ' + ICON.back.replace('<svg', '<svg style="transform:rotate(180deg)"') + '</a>' : '') + '</div></div>';
+    '<div class="stepfoot"><div class="in">' + (si > 0 ? '<a class="btn" href="' + stepHref(STEP_KEYS[si - 1]) + '">' + ICON.back + esc(t('back')) + '</a>' : '<a class="btn" href="#/">' + ICON.back + esc(t('home')) + '</a>') +
+    '<span class="grow"></span><button class="btn gold' + (si < 5 ? ' compact' : '') + '" data-act="gallery" data-testid="save-gallery-bar" aria-label="' + esc(t('saveGallery')) + '">' + ICON.image + '<span class="lbl">' + esc(t('saveGallery')) + '</span></button>' + (si < 5 ? '<a class="btn primary" href="' + stepHref(STEP_KEYS[si + 1]) + '" data-testid="next">' + esc(t('next')) + ' ' + ICON.back.replace('<svg', '<svg style="transform:rotate(180deg)"') + '</a>' : '') + '</div></div>';
   // The step nav is fixed to the bottom on phones and sits under the header on wide screens.
   bindHeader(root);
   on(root, '[data-act=save]', 'click', () => saveNow(true));
@@ -2450,6 +2490,77 @@ function stepTokoh(body) {
   });
   on(body, '[data-act=avatar]', 'click', (e, b) => openAvatar(cOf(b), () => { const card = $('[data-char="' + cOf(b).id + '"]', body); if (card) $('.avatar-box', card).innerHTML = avatarImg(cOf(b)); }));
 }
+/* ---------- gallery upload for character faces ----------
+   The pick is a plain <input type="file">, so phones open their gallery or camera picker from the
+   tap. The photo is cropped to the 4:5 face box and re-encoded to a small WebP (JPEG where the
+   browser cannot encode WebP) so it fits a localStorage project. Nothing is uploaded anywhere. */
+const UPLOAD_MAX_BYTES = 10 * 1024 * 1024;
+const FACE_W = 400, FACE_H = 500, FACE_MAX_DATAURL = 160 * 1024;
+const CAN_WEBP = (() => { try { return document.createElement('canvas').toDataURL('image/webp').slice(0, 15) === 'data:image/webp'; } catch (_) { return false; } })();
+const imgExtOk = (f) => /\.(png|jpe?g|gif|webp|bmp|avif)$/i.test(f.name || '');
+function processFaceImage(file) {
+  return new Promise((res) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    const encode = (quality) => new Promise((res) => {
+      const cv = document.createElement('canvas'); cv.width = FACE_W; cv.height = FACE_H;
+      const ctx = cv.getContext('2d');
+      // Cover-fit: crop the middle of the photo to the 4:5 face box.
+      const r = Math.max(FACE_W / img.naturalWidth, FACE_H / img.naturalHeight);
+      const sw = FACE_W / r, sh = FACE_H / r;
+      ctx.drawImage(img, (img.naturalWidth - sw) / 2, (img.naturalHeight - sh) / 2, sw, sh, 0, 0, FACE_W, FACE_H);
+      cv.toBlob((blob) => {
+        if (!blob) return res(null);
+        if (blob.size > FACE_MAX_DATAURL && quality > 0.55) return res(null); // retry smaller first
+        const fr = new FileReader();
+        fr.onload = () => res(String(fr.result) || null);
+        fr.onerror = () => res(null);
+        fr.readAsDataURL(blob);
+      }, CAN_WEBP ? 'image/webp' : 'image/jpeg', quality);
+    });
+    img.onload = async () => {
+      URL.revokeObjectURL(url);
+      try {
+        let dataUrl = await encode(0.85);
+        if (!dataUrl) dataUrl = await encode(0.55);
+        res(dataUrl);
+      } catch (_) { res(null); }
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); res(null); };
+    img.src = url;
+  });
+}
+/* ---------- the gallery face library ----------
+   A photo picked from the gallery enters the app itself: it is kept per user in
+   localStorage (not in any project) so it can be reused for any character in any
+   project without picking the file again. Deleting a library photo never breaks a
+   character, because every character keeps its own copy in avatar.custom. */
+const KEY_FACES = 'dranus:v1:' + USER_ID + ':faces';
+const FACE_LIB_MAX = 12;
+function loadFaces() {
+  try { const a = JSON.parse(LS.get(KEY_FACES) || '[]'); return Array.isArray(a) ? a.filter((f) => f && f.id && typeof f.data === 'string' && f.data.slice(0, 5) === 'data:') : []; }
+  catch (_) { return []; }
+}
+function saveFaces(list) { return LS.set(KEY_FACES, JSON.stringify(list)); }
+// Returns false when the library is full (or the save failed); the caller still applies the photo to the character.
+function addFace(data) {
+  const list = loadFaces();
+  if (list.some((f) => f.data === data)) return true; // the same photo is already in the app
+  if (list.length >= FACE_LIB_MAX) return false;
+  list.unshift({ id: uid('f'), data, addedAt: Date.now() });
+  return saveFaces(list);
+}
+function removeFace(id) { saveFaces(loadFaces().filter((f) => f.id !== id)); }
+function faceLibraryHtml(lib, c) {
+  const grid = lib.length
+    ? '<div class="opt-grid face-grid">' + lib.map((f) =>
+        '<div class="lib-face">' +
+        '<button type="button" data-libface="' + esc(f.id) + '" aria-pressed="' + ((c.avatar || {}).custom === f.data) + '" aria-label="' + esc(t('galleryFaces')) + '">' + avatarImg({ name: '', avatar: { custom: f.data } }) + '</button>' +
+        '<button type="button" class="icon-btn sm lib-face-del" data-libdel="' + esc(f.id) + '" aria-label="' + esc(t('del')) + '">' + ICON.trash + '</button>' +
+        '</div>').join('') + '</div>'
+    : '<p class="muted small" style="margin:.1rem 0 0">' + esc(t('noGalleryFaces')) + '</p>';
+  return '<div class="stack" data-testid="face-library" style="margin-top:.6rem"><span class="small muted">' + esc(t('galleryFaces')) + '</span>' + grid + '</div>';
+}
 function openAvatar(c, onChange) {
   const box = h('<div class="stack" data-testid="avatar-sheet"></div>');
   // Start on the character's own gender and age group; "Semua" widens either filter.
@@ -2457,19 +2568,51 @@ function openAvatar(c, onChange) {
   const draw = () => {
     const list = PORTRAITS.filter((p) => (fg === 'all' || p.g === fg) && (fa === 'all' || p.age === fa));
     box.innerHTML = '<h3>' + esc(t('faceOf', { n: c.name })) + '</h3><div style="width:140px;height:175px;margin:0 auto;border-radius:16px;overflow:hidden">' + avatarImg(c) + '</div>' +
+      '<p class="muted tiny" style="text-align:center;margin:.2rem 0 0">' + esc(t('uploadHint')) + '</p>' +
+      '<input type="file" accept="image/*" hidden data-upload>' +
+      '<button class="btn big ghost" data-act="upload" data-testid="face-upload">' + ICON.image + esc(t('uploadFace')) + '</button>' +
+      (typeof (c.avatar || {}).custom === 'string' ? '<button class="btn sm ghost" data-act="reset-face" style="align-self:center">' + esc(t('useStudioFace')) + '</button>' : '') +
+      faceLibraryHtml(loadFaces(), c) +
       segHtml('fg', ['all', 'f', 'm'], fg, (v) => t(v === 'all' ? 'all' : v === 'f' ? 'faceF' : 'faceM')) +
       segHtml('fa', ['all'].concat(AGE_GROUPS), fa, (v) => (v === 'all' ? t('all') : lbl('ageGroup', v))) +
-      (list.length ? '<div class="opt-grid face-grid" data-testid="face-grid">' + list.map((p, i) => '<button type="button" data-face="' + p.id + '" aria-pressed="' + (c.avatar.photo === p.id) + '" aria-label="' + esc(t('faceOf', { n: c.name })) + ' ' + (i + 1) + '">' + avatarImg({ name: '', avatar: { photo: p.id } }) + '</button>').join('') + '</div>'
+      (list.length ? '<div class="opt-grid face-grid" data-testid="face-grid">' + list.map((p, i) => '<button type="button" data-face="' + p.id + '" aria-pressed="' + (!c.avatar.custom && c.avatar.photo === p.id) + '" aria-label="' + esc(t('faceOf', { n: c.name })) + ' ' + (i + 1) + '">' + avatarImg({ name: '', avatar: { photo: p.id } }) + '</button>').join('') + '</div>'
         : '<p class="muted small">' + esc(t('noFaces')) + '</p>') +
       '<button class="btn primary big" data-act="done">' + esc(t('done')) + '</button>';
+    const inp = box.querySelector('[data-upload]');
+    if (inp) inp.addEventListener('change', async () => {
+      const f = inp.files && inp.files[0];
+      inp.value = ''; // clear so picking the same file again still fires change
+      if (!f) return; // the picker was cancelled: nothing to do
+      if (!(String(f.type).slice(0, 6) === 'image/' || imgExtOk(f))) { toast(t('imgBad')); return; }
+      if (f.size > UPLOAD_MAX_BYTES) { toast(t('imgTooBig')); return; }
+      const dataUrl = await processFaceImage(f);
+      if (!dataUrl) { toast(t('imgFail')); return; }
+      if (!addFace(dataUrl)) toast(t('libraryFull')); // the photo still lands on this character
+      if (!c.avatar) c.avatar = {};
+      c.avatar.custom = dataUrl;
+      changed(); onChange(); redraw();
+    });
   };
   draw();
   let sh;
   const redraw = () => { const st = box.closest('.un-sheet, .fb-modal'); const top = st ? st.scrollTop : 0; draw(); if (st) st.scrollTop = top; };
   bindSegs(box, { fg: (v) => { fg = v; redraw(); }, fa: (v) => { fa = v; redraw(); } });
-  box.addEventListener('click', (e) => {
+  box.addEventListener('click', async (e) => {
     const b = e.target.closest('[data-face]');
     if (b) { c.avatar = { photo: b.dataset.face }; changed(); onChange(); redraw(); return; }
+    const lb = e.target.closest('[data-libface]');
+    if (lb) {
+      const f = loadFaces().find((x) => x.id === lb.dataset.libface);
+      if (f) { if (!c.avatar) c.avatar = {}; c.avatar.custom = f.data; changed(); onChange(); redraw(); }
+      return;
+    }
+    const ld = e.target.closest('[data-libdel]');
+    if (ld) {
+      if (await confirmDlg(t('delFaceQ'), t('delFaceMsg'), t('del'))) { removeFace(ld.dataset.libdel); redraw(); }
+      return;
+    }
+    if (e.target.closest('[data-act=upload]')) { const i = box.querySelector('[data-upload]'); if (i) i.click(); return; }
+    if (e.target.closest('[data-act=reset-face]')) { delete c.avatar.custom; changed(); onChange(); redraw(); return; }
     if (e.target.closest('[data-act=done]')) sh.dismiss();
   });
   sh = openSheet(box);

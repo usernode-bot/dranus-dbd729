@@ -1,5 +1,6 @@
 {
   "description": "Buat film drama pendek dari ide sampai video siap putar",
+  "icon": { "image": "brand/icon.png" },
   "secrets": [],
   "llm": {
     "purpose": "Menulis ide cerita dan draf naskah drama pendek",
@@ -10,6 +11,11 @@
       "name": "Home shows the project screen",
       "path": "/",
       "expectSelector": "[data-testid=home-start]"
+    },
+    {
+      "name": "Home header shows the DRANUS logo",
+      "path": "/",
+      "expectSelector": ".hdr img[data-testid=app-logo][src='/logo.svg']"
     },
     {
       "id": "studio.new-project",
@@ -51,6 +57,19 @@
         "public/index.html",
         "public/faces/**"
       ]
+    },
+    {
+      "id": "studio.face-upload",
+      "name": "Face sheet offers gallery upload",
+      "path": "/#/templat/surat-dari-ibu/wajah",
+      "expectSelector": "[data-testid=face-upload]",
+      "visual": true,
+      "impact": ["public/index.html"]
+    },
+    {
+      "name": "Face sheet keeps a gallery photo library",
+      "path": "/#/templat/surat-dari-ibu/wajah",
+      "expectSelector": "[data-testid=face-library]"
     },
     {
       "id": "studio.save-frame",
