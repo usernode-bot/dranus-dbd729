@@ -75,6 +75,19 @@
       ]
     },
     {
+      "id": "studio.face-upload",
+      "name": "Face sheet offers gallery upload",
+      "path": "/#/templat/surat-dari-ibu/wajah",
+      "expectSelector": "[data-testid=face-upload]",
+      "visual": true,
+      "impact": ["public/index.html"]
+    },
+    {
+      "name": "Face sheet keeps a gallery photo library",
+      "path": "/#/templat/surat-dari-ibu/wajah",
+      "expectSelector": "[data-testid=face-library]"
+    },
+    {
       "id": "studio.save-frame",
       "name": "Player offers Save Image",
       "path": "/#/templat/surat-dari-ibu",
