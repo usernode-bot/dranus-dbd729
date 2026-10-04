@@ -33,6 +33,22 @@
       "expectSelector": "[data-testid=template-card]"
     },
     {
+      "name": "Story outline screen opens",
+      "path": "/#/cerita",
+      "expectSelector": "[data-testid=outline-premise]"
+    },
+    {
+      "id": "studio.outline",
+      "name": "Story outline builds from a premise",
+      "path": "/#/cerita",
+      "expectSelector": "[data-testid=make-outline]",
+      "visual": true,
+      "impact": [
+        "public/index.html",
+        "server.js"
+      ]
+    },
+    {
       "id": "studio.template-player",
       "name": "Template preview player renders",
       "path": "/#/templat/surat-dari-ibu",
