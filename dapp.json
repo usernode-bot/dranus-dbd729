@@ -28,9 +28,30 @@
       ]
     },
     {
+      "name": "Duration picker offers 1 hour",
+      "path": "/#/baru",
+      "expectSelector": ".seg[data-seg=target] button[data-v=\"60\"]"
+    },
+    {
       "name": "Template list shows the built-in stories",
       "path": "/#/templat",
       "expectSelector": "[data-testid=template-card]"
+    },
+    {
+      "name": "Story outline screen opens",
+      "path": "/#/cerita",
+      "expectSelector": "[data-testid=outline-premise]"
+    },
+    {
+      "id": "studio.outline",
+      "name": "Story outline builds from a premise",
+      "path": "/#/cerita",
+      "expectSelector": "[data-testid=make-outline]",
+      "visual": true,
+      "impact": [
+        "public/index.html",
+        "server.js"
+      ]
     },
     {
       "id": "studio.template-player",
@@ -57,6 +78,19 @@
         "public/index.html",
         "public/faces/**"
       ]
+    },
+    {
+      "id": "studio.face-upload",
+      "name": "Face sheet offers gallery upload",
+      "path": "/#/templat/surat-dari-ibu/wajah",
+      "expectSelector": "[data-testid=face-upload]",
+      "visual": true,
+      "impact": ["public/index.html"]
+    },
+    {
+      "name": "Face sheet keeps a gallery photo library",
+      "path": "/#/templat/surat-dari-ibu/wajah",
+      "expectSelector": "[data-testid=face-library]"
     },
     {
       "id": "studio.save-frame",
