@@ -28,6 +28,11 @@
       ]
     },
     {
+      "name": "Idea step offers Give Me Ideas",
+      "path": "/#/baru",
+      "expectSelector": "[data-testid=give-ideas]"
+    },
+    {
       "name": "Template list shows the built-in stories",
       "path": "/#/templat",
       "expectSelector": "[data-testid=template-card]"

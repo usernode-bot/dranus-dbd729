@@ -337,8 +337,9 @@
     .un-sheet { touch-action: pan-y; }
     .un-sheet .sheet-body { max-height: calc(100vh - 72px); max-height: calc(100dvh - 72px); overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
     .sheet-body h3 { font-family: var(--font-title); letter-spacing: .08em; text-transform: uppercase; margin: 0 0 .75rem; font-size: 1.05rem; color: var(--gold); }
-    .idea { text-align: left; width: 100%; padding: .8rem .9rem; border-radius: 12px; border: 1px solid var(--line); background: var(--bg2); cursor: pointer; font-size: .95rem; line-height: 1.4; }
+    .idea { text-align: left; width: 100%; padding: .8rem .9rem; border-radius: 12px; border: 1px solid var(--line); background: var(--bg2); display: flex; align-items: center; gap: .6rem; font-size: .95rem; line-height: 1.4; }
     .idea:hover { border-color: var(--gold); }
+    .idea .btn { flex: none; }
     .preview-box { max-height: 50vh; overflow: auto; border: 1px solid var(--line); border-radius: 12px; padding: .6rem .75rem; background: var(--bg2); font-size: .88rem; }
     .preview-box p { margin: .25rem 0; }
     .loading-screen { min-height: 60vh; display: flex; align-items: center; justify-content: center; gap: .6rem; }
@@ -399,7 +400,7 @@ const STR = {
       'Atur suara tokoh, narator, musik latar, dan efek suara.', 'Putar film, atur papan adegan, lalu ekspor video.'],
     title: 'Judul', genre: 'Genre', target: 'Durasi target', tone: 'Nada cerita', dialogLang: 'Bahasa dialog', premise: 'Premis (satu kalimat)',
     premisePh: 'Contoh: Seorang anak menemukan surat lama dari ibunya di hari kelulusan.', titlePh: 'Judul film',
-    minutes: '{n} menit', giveIdeas: 'Beri Saya Ide', ideasTitle: 'Pilih salah satu premis', reroll: 'Acak Lagi', ideaPicked: 'Premis dipakai. Kamu bisa mengubahnya.',
+    minutes: '{n} menit', giveIdeas: 'Beri Saya Ide', ideasTitle: 'Pilih salah satu premis', reroll: 'Acak Lagi', ideaPicked: 'Premis dipakai. Kamu bisa mengubahnya.', useIdea: 'Pakai',
     byAi: 'Ditulis AI', byGen: 'Generator bawaan', generating: 'Sedang menulis...',
     langId: 'Indonesia', langEn: 'Inggris',
     cast: 'Tokoh', addChar: 'Tambah Tokoh', name: 'Nama', age: 'Usia', role: 'Peran', traits: 'Sifat',
@@ -466,7 +467,7 @@ const STR = {
       'Set character voices, narrator, background music and sound effects.', 'Play the film, arrange the timeline, then export the video.'],
     title: 'Title', genre: 'Genre', target: 'Target length', tone: 'Tone', dialogLang: 'Dialogue language', premise: 'Premise (one sentence)',
     premisePh: 'Example: A child finds an old letter from their mother on graduation day.', titlePh: 'Film title',
-    minutes: '{n} min', giveIdeas: 'Give Me Ideas', ideasTitle: 'Pick a premise', reroll: 'Shuffle Again', ideaPicked: 'Premise added. You can still edit it.',
+    minutes: '{n} min', giveIdeas: 'Give Me Ideas', ideasTitle: 'Pick a premise', reroll: 'Shuffle Again', ideaPicked: 'Premise added. You can still edit it.', useIdea: 'Use',
     byAi: 'Written by AI', byGen: 'Built-in generator', generating: 'Writing...',
     langId: 'Indonesian', langEn: 'English',
     cast: 'Cast', addChar: 'Add Character', name: 'Name', age: 'Age', role: 'Role', traits: 'Traits',
@@ -2559,9 +2560,9 @@ function openIdeas(premEl) {
     box.innerHTML = '<h3>' + esc(t('ideasTitle')) + '</h3><div class="row"><span class="spinner"></span><span class="muted">' + esc(t('generating')) + '</span></div>';
     const r = await generateIdeas(App.data);
     box.innerHTML = '<h3>' + esc(t('ideasTitle')) + '</h3><div><span class="chip">' + esc(t(r.source === 'ai' ? 'byAi' : 'byGen')) + '</span></div>' +
-      r.ideas.map((x, i) => '<button class="idea" data-i="' + i + '">' + esc(x) + '</button>').join('') +
+      r.ideas.map((x, i) => '<div class="idea"><span class="grow">' + esc(x) + '</span><button class="btn sm primary" data-idea-send="' + i + '" data-testid="idea-send" aria-label="' + esc(t('useIdea')) + '">' + ICON.check + esc(t('useIdea')) + '</button></div>').join('') +
       '<button class="btn" data-act="reroll">' + ICON.replay + esc(t('reroll')) + '</button>';
-    $$('.idea', box).forEach((b) => { b.onclick = () => { App.data.project.premise = r.ideas[+b.dataset.i]; premEl.value = App.data.project.premise; changed(); sh.dismiss(); toast(t('ideaPicked')); premEl.focus({ preventScroll: true }); }; });
+    $$('[data-idea-send]', box).forEach((b) => { b.onclick = () => { App.data.project.premise = r.ideas[+b.dataset.ideaSend]; premEl.value = App.data.project.premise; changed(); sh.dismiss(); toast(t('ideaPicked')); premEl.focus({ preventScroll: true }); }; });
     $('[data-act=reroll]', box).onclick = load;
   };
   sh = openSheet(box);
