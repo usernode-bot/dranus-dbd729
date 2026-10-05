@@ -43,6 +43,11 @@
       "expectSelector": "[data-testid=outline-premise]"
     },
     {
+      "name": "Story outline offers AI premise ideas",
+      "path": "/#/cerita",
+      "expectSelector": "[data-testid=outline-ideas]"
+    },
+    {
       "id": "studio.outline",
       "name": "Story outline builds from a premise",
       "path": "/#/cerita",

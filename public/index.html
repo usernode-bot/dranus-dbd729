@@ -339,6 +339,9 @@
     .sheet-body h3 { font-family: var(--font-title); letter-spacing: .08em; text-transform: uppercase; margin: 0 0 .75rem; font-size: 1.05rem; color: var(--gold); }
     .idea { text-align: left; width: 100%; padding: .8rem .9rem; border-radius: 12px; border: 1px solid var(--line); background: var(--bg2); cursor: pointer; font-size: .95rem; line-height: 1.4; }
     .idea:hover { border-color: var(--gold); }
+    .idea-row { display: flex; gap: .5rem; align-items: center; }
+    .idea-row .idea { flex: 1 1 auto; min-width: 0; width: auto; }
+    .idea-row .btn { flex: 0 0 auto; }
     .preview-box { max-height: 50vh; overflow: auto; border: 1px solid var(--line); border-radius: 12px; padding: .6rem .75rem; background: var(--bg2); font-size: .88rem; }
     .preview-box p { margin: .25rem 0; }
     .loading-screen { min-height: 60vh; display: flex; align-items: center; justify-content: center; gap: .6rem; }
@@ -399,7 +402,7 @@ const STR = {
       'Atur suara tokoh, narator, musik latar, dan efek suara.', 'Putar film, atur papan adegan, lalu ekspor video.'],
     title: 'Judul', genre: 'Genre', target: 'Durasi target', tone: 'Nada cerita', dialogLang: 'Bahasa dialog', premise: 'Premis (satu kalimat)',
     premisePh: 'Contoh: Seorang anak menemukan surat lama dari ibunya di hari kelulusan.', titlePh: 'Judul film',
-    minutes: '{n} menit', hour: '1 jam', giveIdeas: 'Beri Saya Ide', ideasTitle: 'Pilih salah satu premis', reroll: 'Acak Lagi', ideaPicked: 'Premis dipakai. Kamu bisa mengubahnya.',
+    minutes: '{n} menit', hour: '1 jam', giveIdeas: 'Beri Saya Ide', ideasTitle: 'Pilih salah satu premis', reroll: 'Acak Lagi', ideaPicked: 'Premis dipakai. Kamu bisa mengubahnya.', sendPremise: 'Kirim',
     byAi: 'Ditulis AI', byGen: 'Generator bawaan', generating: 'Sedang menulis...',
     langId: 'Indonesia', langEn: 'Inggris',
     cast: 'Tokoh', addChar: 'Tambah Tokoh', name: 'Nama', age: 'Usia', role: 'Peran', traits: 'Sifat',
@@ -466,7 +469,7 @@ const STR = {
       'Set character voices, narrator, background music and sound effects.', 'Play the film, arrange the timeline, then export the video.'],
     title: 'Title', genre: 'Genre', target: 'Target length', tone: 'Tone', dialogLang: 'Dialogue language', premise: 'Premise (one sentence)',
     premisePh: 'Example: A child finds an old letter from their mother on graduation day.', titlePh: 'Film title',
-    minutes: '{n} min', hour: '1 hour', giveIdeas: 'Give Me Ideas', ideasTitle: 'Pick a premise', reroll: 'Shuffle Again', ideaPicked: 'Premise added. You can still edit it.',
+    minutes: '{n} min', hour: '1 hour', giveIdeas: 'Give Me Ideas', ideasTitle: 'Pick a premise', reroll: 'Shuffle Again', ideaPicked: 'Premise added. You can still edit it.', sendPremise: 'Send',
     byAi: 'Written by AI', byGen: 'Built-in generator', generating: 'Writing...',
     langId: 'Indonesian', langEn: 'English',
     cast: 'Cast', addChar: 'Add Character', name: 'Name', age: 'Age', role: 'Role', traits: 'Traits',
@@ -1182,11 +1185,11 @@ async function aiGenerate(kind, lang, input) {
     return (await r.json()).data || null;
   } catch (_) { return null; }
 }
-async function generateIdeas(data) {
-  const lang = data.project.dialogLang === 'en' ? 'en' : 'id';
-  const ai = await aiGenerate('ideas', lang, { genre: data.project.genre, tone: data.project.tone, title: data.project.title });
+async function generateIdeas(project) {
+  const lang = project.dialogLang === 'en' ? 'en' : 'id';
+  const ai = await aiGenerate('ideas', lang, { genre: project.genre, tone: project.tone, title: project.title });
   if (ai && Array.isArray(ai.ideas) && ai.ideas.length) return { ideas: ai.ideas.slice(0, 5).map(String), source: 'ai' };
-  return { ideas: offlineIdeas(data.project.genre, lang), source: 'gen' };
+  return { ideas: offlineIdeas(project.genre, lang), source: 'gen' };
 }
 async function generateScript(data) {
   const lang = data.project.dialogLang === 'en' ? 'en' : 'id';
@@ -2192,6 +2195,7 @@ const ICON = {
   sound: sv('<path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/>'), film: sv('<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M10 9l5 3-5 3z" fill="currentColor"/>'),
   more: sv('<circle cx="5" cy="12" r="1.6" fill="currentColor"/><circle cx="12" cy="12" r="1.6" fill="currentColor"/><circle cx="19" cy="12" r="1.6" fill="currentColor"/>'),
   upload: sv('<path d="M12 16V4M7 9l5-5 5 5M4 20h16"/>'), download: sv('<path d="M12 4v12M7 11l5 5 5-5M4 20h16"/>'), copy: sv('<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/>'),
+  send: sv('<path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/>'),
   speaker: sv('<path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16 9a4 4 0 0 1 0 6M18.5 6.5a8 8 0 0 1 0 11"/>'), wand: sv('<path d="M4 20L16 8M14 4l1 2 2 1-2 1-1 2-1-2-2-1 2-1zM19 11l.7 1.3L21 13l-1.3.7L19 15l-.7-1.3L17 13l1.3-.7z"/>'),
   warn: sv('<path d="M12 3l10 18H2z"/><path d="M12 10v5M12 18h.01"/>'), check: sv('<path d="M5 12l5 5 9-10"/>'), film2: sv('<path d="M4 6h16v12H4zM4 10h16M8 6v4M12 6v4M16 6v4"/>'),
   image: sv('<rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-9 9"/>'),
@@ -2461,6 +2465,7 @@ function viewOutline(root) {
     '<div class="card stack">' +
     '<p class="small muted" style="margin:0">' + esc(t('outlineHint')) + '</p>' +
     '<label class="fld">' + esc(t('premise')) + '<textarea class="inp" data-testid="outline-premise" rows="3" maxlength="300" placeholder="' + esc(t('premisePh')) + '">' + esc(o.premise) + '</textarea></label>' +
+    '<button class="btn gold" data-act="ideas" data-testid="outline-ideas">' + ICON.idea + esc(t('giveIdeas')) + '</button>' +
     '<div class="fld"><span>' + esc(t('genre')) + '</span>' + segHtml('ogenre', GENRES, o.genre, (v) => lbl('genre', v)) + '</div>' +
     '<div class="fld"><span>' + esc(t('tone')) + '</span>' + segHtml('otone', TONES, o.tone, (v) => lbl('tone', v)) + '</div>' +
     '<button class="btn primary big" data-act="make-outline" data-testid="make-outline"' + (o.premise.trim() ? '' : ' disabled') + '>' + ICON.wand + esc(t('makeOutline')) + '</button></div>' +
@@ -2495,6 +2500,18 @@ function viewOutline(root) {
   // Direct binding: the #app root outlives renders, so delegated handlers there would pile up.
   btn.onclick = make;
   on(root, '[data-act=orun]', 'click', () => make());
+  // Premise ideas for the outline: Send applies the idea and immediately starts
+  // the outline, so the story flow begins from the chosen premise. Bound on the
+  // button itself: the #app root outlives renders, so a delegated handler there
+  // would pile up and also leak into other views' buttons.
+  $('[data-act=ideas]', root).onclick = () => openIdeas(
+    { dialogLang: LANG === 'en' ? 'en' : 'id', genre: o.genre, tone: o.tone, title: '' },
+    premEl,
+    {
+      apply: (p) => { o.premise = p; premEl.value = p; btn.disabled = false; },
+      send: () => make(),
+    }
+  );
 }
 
 /* ---------- wizard shell ---------- */
@@ -2552,18 +2569,32 @@ function stepIde(body, root) {
     genre: (v) => { p.genre = v; changed(); }, target: (v) => { p.targetMinutes = +v; changed(); },
     tone: (v) => { p.tone = v; changed(); }, dlang: (v) => { p.dialogLang = v; changed(); },
   });
-  on(body, '[data-act=ideas]', 'click', () => openIdeas(prem));
+  on(body, '[data-act=ideas]', 'click', () => openIdeas(App.data.project, prem));
 }
-function openIdeas(premEl) {
+/* Shared premise-ideas sheet. project feeds the generator (wizard project or
+   outline state), premEl is the field the chosen premise lands in, opts.apply
+   stores it outside the wizard and opts.send runs the "Send" step: pushing the
+   premise straight into the story flow after it is applied. */
+function openIdeas(project, premEl, opts) {
+  const o = opts || {};
   const box = h('<div class="stack" data-testid="ideas-sheet"></div>');
   let sh;
+  const apply = (premise) => {
+    if (o.apply) o.apply(premise);
+    else { App.data.project.premise = premise; premEl.value = premise; changed(); }
+    sh.dismiss();
+    toast(t('ideaPicked'));
+    premEl.focus({ preventScroll: true });
+  };
   const load = async () => {
     box.innerHTML = '<h3>' + esc(t('ideasTitle')) + '</h3><div class="row"><span class="spinner"></span><span class="muted">' + esc(t('generating')) + '</span></div>';
-    const r = await generateIdeas(App.data);
+    const r = await generateIdeas(project);
     box.innerHTML = '<h3>' + esc(t('ideasTitle')) + '</h3><div><span class="chip">' + esc(t(r.source === 'ai' ? 'byAi' : 'byGen')) + '</span></div>' +
-      r.ideas.map((x, i) => '<button class="idea" data-i="' + i + '">' + esc(x) + '</button>').join('') +
+      r.ideas.map((x, i) => '<div class="idea-row"><button class="idea" data-i="' + i + '">' + esc(x) + '</button>' +
+        '<button class="btn primary" data-send="' + i + '" data-testid="send-idea" aria-label="' + esc(t('sendPremise')) + '">' + ICON.send + '<span>' + esc(t('sendPremise')) + '</span></button></div>').join('') +
       '<button class="btn" data-act="reroll">' + ICON.replay + esc(t('reroll')) + '</button>';
-    $$('.idea', box).forEach((b) => { b.onclick = () => { App.data.project.premise = r.ideas[+b.dataset.i]; premEl.value = App.data.project.premise; changed(); sh.dismiss(); toast(t('ideaPicked')); premEl.focus({ preventScroll: true }); }; });
+    $$('.idea', box).forEach((b) => { b.onclick = () => apply(r.ideas[+b.dataset.i]); });
+    $$('[data-send]', box).forEach((b) => { b.onclick = () => { const premise = r.ideas[+b.dataset.send]; apply(premise); if (o.send) o.send(premise); }; });
     $('[data-act=reroll]', box).onclick = load;
   };
   sh = openSheet(box);
