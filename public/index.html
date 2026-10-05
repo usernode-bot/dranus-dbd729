@@ -339,6 +339,9 @@
     .sheet-body h3 { font-family: var(--font-title); letter-spacing: .08em; text-transform: uppercase; margin: 0 0 .75rem; font-size: 1.05rem; color: var(--gold); }
     .idea { text-align: left; width: 100%; padding: .8rem .9rem; border-radius: 12px; border: 1px solid var(--line); background: var(--bg2); cursor: pointer; font-size: .95rem; line-height: 1.4; }
     .idea:hover { border-color: var(--gold); }
+    .idea-row { display: flex; gap: .5rem; align-items: stretch; }
+    .idea-row .idea { flex: 1 1 0; width: auto; }
+    .idea-send { flex: none; white-space: nowrap; }
     .preview-box { max-height: 50vh; overflow: auto; border: 1px solid var(--line); border-radius: 12px; padding: .6rem .75rem; background: var(--bg2); font-size: .88rem; }
     .preview-box p { margin: .25rem 0; }
     .loading-screen { min-height: 60vh; display: flex; align-items: center; justify-content: center; gap: .6rem; }
@@ -400,6 +403,7 @@ const STR = {
     title: 'Judul', genre: 'Genre', target: 'Durasi target', tone: 'Nada cerita', dialogLang: 'Bahasa dialog', premise: 'Premis (satu kalimat)',
     premisePh: 'Contoh: Seorang anak menemukan surat lama dari ibunya di hari kelulusan.', titlePh: 'Judul film',
     minutes: '{n} menit', hour: '1 jam', giveIdeas: 'Beri Saya Ide', ideasTitle: 'Pilih salah satu premis', reroll: 'Acak Lagi', ideaPicked: 'Premis dipakai. Kamu bisa mengubahnya.',
+    send: 'Kirim', ideaSent: 'Premis dikirim ke alur cerita. Lanjut ke tokoh.',
     byAi: 'Ditulis AI', byGen: 'Generator bawaan', generating: 'Sedang menulis...',
     langId: 'Indonesia', langEn: 'Inggris',
     cast: 'Tokoh', addChar: 'Tambah Tokoh', name: 'Nama', age: 'Usia', role: 'Peran', traits: 'Sifat',
@@ -467,6 +471,7 @@ const STR = {
     title: 'Title', genre: 'Genre', target: 'Target length', tone: 'Tone', dialogLang: 'Dialogue language', premise: 'Premise (one sentence)',
     premisePh: 'Example: A child finds an old letter from their mother on graduation day.', titlePh: 'Film title',
     minutes: '{n} min', hour: '1 hour', giveIdeas: 'Give Me Ideas', ideasTitle: 'Pick a premise', reroll: 'Shuffle Again', ideaPicked: 'Premise added. You can still edit it.',
+    send: 'Send', ideaSent: 'Premise sent into the story. On to the cast.',
     byAi: 'Written by AI', byGen: 'Built-in generator', generating: 'Writing...',
     langId: 'Indonesian', langEn: 'English',
     cast: 'Cast', addChar: 'Add Character', name: 'Name', age: 'Age', role: 'Role', traits: 'Traits',
@@ -2195,6 +2200,7 @@ const ICON = {
   speaker: sv('<path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16 9a4 4 0 0 1 0 6M18.5 6.5a8 8 0 0 1 0 11"/>'), wand: sv('<path d="M4 20L16 8M14 4l1 2 2 1-2 1-1 2-1-2-2-1 2-1zM19 11l.7 1.3L21 13l-1.3.7L19 15l-.7-1.3L17 13l1.3-.7z"/>'),
   warn: sv('<path d="M12 3l10 18H2z"/><path d="M12 10v5M12 18h.01"/>'), check: sv('<path d="M5 12l5 5 9-10"/>'), film2: sv('<path d="M4 6h16v12H4zM4 10h16M8 6v4M12 6v4M16 6v4"/>'),
   image: sv('<rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-9 9"/>'),
+  send: sv('<path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/>'),
 };
 const STEP_KEYS = ['ide', 'tokoh', 'naskah', 'storyboard', 'suara', 'putar'];
 const STEP_ICONS = [ICON.idea, ICON.cast, ICON.script, ICON.board, ICON.sound, ICON.film];
@@ -2561,9 +2567,12 @@ function openIdeas(premEl) {
     box.innerHTML = '<h3>' + esc(t('ideasTitle')) + '</h3><div class="row"><span class="spinner"></span><span class="muted">' + esc(t('generating')) + '</span></div>';
     const r = await generateIdeas(App.data);
     box.innerHTML = '<h3>' + esc(t('ideasTitle')) + '</h3><div><span class="chip">' + esc(t(r.source === 'ai' ? 'byAi' : 'byGen')) + '</span></div>' +
-      r.ideas.map((x, i) => '<button class="idea" data-i="' + i + '">' + esc(x) + '</button>').join('') +
+      r.ideas.map((x, i) => '<div class="idea-row"><button class="idea" data-i="' + i + '">' + esc(x) + '</button>' +
+        '<button class="btn sm primary idea-send" data-send="' + i + '" data-testid="send-idea">' + ICON.send + esc(t('send')) + '</button></div>').join('') +
       '<button class="btn" data-act="reroll">' + ICON.replay + esc(t('reroll')) + '</button>';
-    $$('.idea', box).forEach((b) => { b.onclick = () => { App.data.project.premise = r.ideas[+b.dataset.i]; premEl.value = App.data.project.premise; changed(); sh.dismiss(); toast(t('ideaPicked')); premEl.focus({ preventScroll: true }); }; });
+    const useIdea = (i) => { App.data.project.premise = r.ideas[i]; changed(); };
+    $$('.idea', box).forEach((b) => { b.onclick = () => { useIdea(+b.dataset.i); premEl.value = App.data.project.premise; sh.dismiss(); toast(t('ideaPicked')); premEl.focus({ preventScroll: true }); }; });
+    $$('[data-send]', box).forEach((b) => { b.onclick = () => { useIdea(+b.dataset.send); sh.dismiss(); toast(t('ideaSent')); go('#/p/' + encodeURIComponent(App.data.project.id) + '/tokoh'); }; });
     $('[data-act=reroll]', box).onclick = load;
   };
   sh = openSheet(box);
