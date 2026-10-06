@@ -28,6 +28,11 @@
       ]
     },
     {
+      "name": "Idea step offers Give Me Ideas",
+      "path": "/#/baru",
+      "expectSelector": "[data-testid=give-ideas]"
+    },
+    {
       "name": "Duration picker offers 1 hour",
       "path": "/#/baru",
       "expectSelector": ".seg[data-seg=target] button[data-v=\"60\"]"
