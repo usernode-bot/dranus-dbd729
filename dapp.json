@@ -33,6 +33,11 @@
       "expectSelector": "[data-testid=give-ideas]"
     },
     {
+      "name": "Duration picker offers 1 hour",
+      "path": "/#/baru",
+      "expectSelector": ".seg[data-seg=target] button[data-v=\"60\"]"
+    },
+    {
       "name": "Template list shows the built-in stories",
       "path": "/#/templat",
       "expectSelector": "[data-testid=template-card]"
