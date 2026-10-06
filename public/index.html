@@ -226,7 +226,7 @@
     .proj-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: .75rem; }
     .proj-card { display: flex; gap: .75rem; align-items: center; padding: .8rem; border-radius: 14px; background: var(--panel); border: 1px solid var(--line); cursor: pointer; }
     .proj-card .thumb { width: 84px; height: 48px; border-radius: 8px; overflow: hidden; flex: none; background: #000; }
-    .proj-card .thumb svg { width: 100%; height: 100%; display: block; }
+    .proj-card .thumb svg, .proj-card .thumb img { width: 100%; height: 100%; display: block; object-fit: cover; }
     .proj-card h3 { margin: 0; font-size: 1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .empty > svg { margin: 0 auto; }
     .empty { text-align: center; padding: 2rem 1rem; border: 1px dashed var(--line); border-radius: 16px; }
@@ -573,7 +573,7 @@ const TRANS = ['potong', 'fade', 'dissolve'];
 const MUSICS = ['none', 'sedih', 'tegang', 'ceria', 'tenang', 'guzheng'];
 const SFXS = ['pintu', 'hujan', 'langkah', 'telepon'];
 const AGE_GROUPS = ['anak', 'remaja', 'dewasa', 'lansia'];
-const SCHEMA_VERSION = 3;
+const SCHEMA_VERSION = 4;
 const MAX_LINE = 160;
 
 /* Locations typed as free text are matched to an illustration by keyword. */
@@ -857,10 +857,51 @@ function writeProject(data) {
   if (!LS.set(keyProj(data.project.id), JSON.stringify(data))) return false;
   const idx = loadIndex().filter((x) => x.id !== data.project.id);
   idx.unshift(summaryOf(data));
-  return LS.set(KEY_INDEX, JSON.stringify(idx));
+  if (!LS.set(KEY_INDEX, JSON.stringify(idx))) return false;
+  // Refresh the card picture off the critical path; storeThumb skips the write
+  // when the entry is gone or the picture is unchanged.
+  queueThumb(data).then((thumb) => storeThumb(data.project.id, thumb));
+  return true;
 }
 function readProject(id) { try { const raw = LS.get(keyProj(id)); return raw ? migrate(JSON.parse(raw)) : null; } catch (_) { return null; } }
 function removeProject(id) { LS.del(keyProj(id)); LS.set(KEY_INDEX, JSON.stringify(loadIndex().filter((x) => x.id !== id))); }
+
+/* ---------- card thumbnail ----------
+   The home card keeps a small picture of the real film: the first shot, drawn
+   the way the player draws it, cover-cropped onto a 168x96 canvas and stored as
+   a JPEG data URL on the project's index entry (a few KB). Thumbnails live on
+   the index only, never in the project document, so migrate() needs no change.
+   A project without shots resolves null and the card keeps its backdrop. */
+const thumbTokens = {};
+function queueThumb(data) {
+  const id = data.project.id;
+  // Last writer wins: with rapid saves only the newest frame is stored.
+  const token = (thumbTokens[id] || 0) + 1;
+  thumbTokens[id] = token;
+  const p = effectiveShots(data)[0];
+  if (!p) return Promise.resolve(null);
+  const aspect = data.project.settings.aspect === '9:16' ? '9:16' : '16:9';
+  return shotImage(data, p, aspect).then((img) => {
+    if (!img || thumbTokens[id] !== token) return null;
+    const w = img.naturalWidth || img.width || 0, h = img.naturalHeight || img.height || 0;
+    if (!w || !h) return null;
+    const cv = document.createElement('canvas'); cv.width = 168; cv.height = 96;
+    const ctx = cv.getContext('2d');
+    const r = Math.max(168 / w, 96 / h);
+    ctx.drawImage(img, (w - 168 / r) / 2, (h - 96 / r) / 2, 168 / r, 96 / r, 0, 0, 168, 96);
+    return cv.toDataURL('image/jpeg', 0.7);
+  }).catch(() => null);
+}
+function storeThumb(id, thumb) {
+  if (!thumb) return;
+  const list = loadIndex();
+  const s = list.find((x) => x.id === id);
+  if (!s || s.thumb === thumb) return;
+  s.thumb = thumb;
+  // A full device keeps the save and degrades to the backdrop.
+  if (!LS.set(KEY_INDEX, JSON.stringify(list))) { s.thumb = null; LS.set(KEY_INDEX, JSON.stringify(list)); }
+  if (parseRoute().name === 'home') render();
+}
 function migrate(data) {
   if (!data || !data.project) return null;
   data.characters = data.characters || []; data.scenes = data.scenes || []; data.dialogues = data.dialogues || []; data.shots = data.shots || [];
@@ -877,6 +918,8 @@ function migrate(data) {
     if (c.avatar && (c.avatar.custom || portraitById(c.avatar.photo))) return;
     c.avatar = { photo: pickPortrait(c, data.characters.map((x) => x !== c && x.avatar && x.avatar.photo).filter(Boolean)) };
   });
+  // v4 marks the card-thumbnail change; the picture itself lives on the index
+  // entry (see queueThumb), never in the project document, so nothing to migrate.
   data.project.schemaVersion = SCHEMA_VERSION;
   return data;
 }
@@ -2334,7 +2377,11 @@ function render() {
   if (r.name === 'tpls') { App.data = null; return viewTemplates(root); }
   if (r.name === 'tpl') return viewTemplatePreview(root, r.id, r.step);
   if (r.name === 'proj') {
-    if (!App.data || App.data.project.id !== r.id) App.data = readProject(r.id);
+    if (!App.data || App.data.project.id !== r.id) {
+      App.data = readProject(r.id);
+      // An older project gains its card picture the first time it is opened.
+      if (App.data) queueThumb(App.data).then((thumb) => storeThumb(r.id, thumb));
+    }
     if (!App.data) { toast(t('notFound')); go('#/', true); return; }
     App.step = r.step;
     return viewWizard(root, r.step);
@@ -2344,7 +2391,7 @@ function render() {
 /* ---------- home ---------- */
 function projCard(s) {
   return '<div class="proj-card" data-open="' + esc(s.id) + '" role="button" tabindex="0" data-testid="project-card">' +
-    '<div class="thumb">' + bgSVG(s.cover, s.coverTime) + '</div><div class="grow"><h3>' + esc(s.title || t('untitled')) + '</h3>' +
+    '<div class="thumb">' + (s.thumb ? '<img src="' + s.thumb + '" alt="">' : bgSVG(s.cover, s.coverTime)) + '</div><div class="grow"><h3>' + esc(s.title || t('untitled')) + '</h3>' +
     '<div class="row wrap small muted" style="gap:.35rem;margin-top:.2rem"><span class="chip">' + esc(lbl('genre', s.genre)) + '</span><span>' + fmtTime(s.estMs || 0) + ' / ' + fmtTime((s.targetMinutes || 1) * 60000) + '</span></div>' +
     '<div class="tiny muted" style="margin-top:.2rem">' + esc(t('edited', { d: new Date(s.updatedAt).toLocaleDateString(LANG === 'id' ? 'id-ID' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) })) + '</div></div>' +
     '<button class="icon-btn sm" data-menu="' + esc(s.id) + '" aria-label="' + esc(t('more') || 'Menu') + '">' + ICON.more + '</button></div>';
