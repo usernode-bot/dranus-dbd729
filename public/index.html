@@ -2361,7 +2361,7 @@ function homeHeader() {
 function viewHome(root) {
   const idx = loadIndex();
   root.innerHTML = homeHeader() + '<main class="main home stack" data-testid="home" style="gap:1.4rem">' +
-    '<section class="hero"><span class="chip">' + esc(t('shortFilm')) + '</span><h2>' + esc(t('app')) + '</h2><p class="muted" style="margin:0 0 1rem">' + esc(t('tagline')) + '</p>' +
+    '<section class="hero"><h2>' + esc(t('app')) + '</h2><p class="muted" style="margin:0 0 1rem">' + esc(t('tagline')) + '</p>' +
     '<div class="row wrap" style="justify-content:center"><a class="btn primary big" href="#/baru" data-testid="home-start">' + ICON.idea + esc(t('startIdea')) + '</a><a class="btn big" href="#/cerita" data-testid="home-outline">' + ICON.wand + esc(t('outline')) + '</a><a class="btn big" href="#/templat">' + ICON.film + esc(t('pickTemplate')) + '</a></div></section>' +
     '<section><div class="row" style="margin-bottom:.6rem"><h2 class="sec-title grow" style="margin:0">' + esc(t('myProjects')) + '</h2><button class="btn sm" data-act="import">' + ICON.upload + esc(t('importProject')) + '</button></div>' +
     (idx.length ? '<div class="proj-grid">' + idx.map(projCard).join('') + '</div>'
