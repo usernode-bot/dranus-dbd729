@@ -402,6 +402,7 @@ const NK = () => window.unNative || null;
 const STR = {
   id: {
     app: 'Studio Drama Pendek', tagline: 'Buat film drama pendek dari ide sampai video siap putar.',
+    heroTitle: 'Buat Video Drama Pendek dari Naskah sampai Layar',
     myProjects: 'Proyek Saya', startIdea: 'Mulai dari Ide', pickTemplate: 'Pilih Templat', templates: 'Templat Cerita',
     emptyProjects: 'Belum ada proyek, mulai dari ide atau templat',
     importProject: 'Impor Proyek', exportJson: 'Ekspor JSON', duplicate: 'Duplikat', del: 'Hapus', open: 'Buka', cancel: 'Batal',
@@ -470,6 +471,7 @@ const STR = {
   },
   en: {
     app: 'Short Drama Studio', tagline: 'Make short drama films from idea to a ready-to-play video.',
+    heroTitle: 'Create Short Drama Videos from Script to Screen',
     myProjects: 'My Projects', startIdea: 'Start from an Idea', pickTemplate: 'Choose a Template', templates: 'Story Templates',
     emptyProjects: 'No projects yet. Start from an idea or a template',
     importProject: 'Import Project', exportJson: 'Export JSON', duplicate: 'Duplicate', del: 'Delete', open: 'Open', cancel: 'Cancel',
@@ -2379,7 +2381,7 @@ function homeHeader() {
 function viewHome(root) {
   const idx = loadIndex();
   root.innerHTML = homeHeader() + '<main class="main home stack" data-testid="home" style="gap:1.4rem">' +
-    '<section class="hero"><h2>' + esc(t('app')) + '</h2><p class="muted" style="margin:0 0 1rem">' + esc(t('tagline')) + '</p>' +
+    '<section class="hero"><span class="chip">' + esc(t('shortFilm')) + '</span><h2>' + esc(t('heroTitle')) + '</h2><p class="muted" style="margin:0 0 1rem">' + esc(t('tagline')) + '</p>' +
     '<div class="row wrap" style="justify-content:center"><a class="btn primary big" href="#/baru" data-testid="home-start">' + ICON.idea + esc(t('startIdea')) + '</a><a class="btn big" href="#/cerita" data-testid="home-outline">' + ICON.wand + esc(t('outline')) + '</a><a class="btn big" href="#/templat">' + ICON.film + esc(t('pickTemplate')) + '</a></div></section>' +
     '<section><div class="row" style="margin-bottom:.6rem"><h2 class="sec-title grow" style="margin:0">' + esc(t('myProjects')) + '</h2><button class="btn sm" data-act="import">' + ICON.upload + esc(t('importProject')) + '</button></div>' +
     (idx.length ? '<div class="proj-grid">' + idx.map(projCard).join('') + '</div>'
