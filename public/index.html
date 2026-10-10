@@ -2360,10 +2360,21 @@ function render() {
 }
 
 /* ---------- home ---------- */
+/* A card's thumbnail: a frame from the project's own video (the first shot with someone in it, past the
+   title card), cropped to fill. Falls back to the first scene's backdrop when there is no shot to show. */
+function projThumb(s) {
+  try {
+    const d = readProject(s.id);
+    const plan = d ? effectiveShots(d) : [];
+    const p = plan.find((x) => (x.shot.characterIds || []).length) || plan[0];
+    if (p) return '<div class="thumb" data-testid="project-frame">' + frameSVG(d, p, d.project.settings.aspect).replace(/^<svg([^>]*?) width="\d+" height="\d+"/, '<svg$1 preserveAspectRatio="xMidYMid slice"') + '</div>';
+  } catch (_) {}
+  return '<div class="thumb">' + bgSVG(s.cover, s.coverTime) + '</div>';
+}
 function projCard(s) {
   const title = s.title || t('untitled');
   return '<div class="proj-card" data-open="' + esc(s.id) + '" data-testid="project-card"><div class="top">' +
-    '<div class="thumb">' + bgSVG(s.cover, s.coverTime) + '</div><div class="grow"><h3>' + esc(title) + '</h3>' +
+    projThumb(s) + '<div class="grow"><h3>' + esc(title) + '</h3>' +
     '<div class="row wrap small muted" style="gap:.35rem;margin-top:.2rem"><span class="chip">' + esc(lbl('genre', s.genre)) + '</span><span>' + fmtTime(s.estMs || 0) + ' / ' + fmtTime((s.targetMinutes || 1) * 60000) + '</span></div>' +
     '<div class="tiny muted" style="margin-top:.2rem">' + esc(t('edited', { d: new Date(s.updatedAt).toLocaleDateString(LANG === 'id' ? 'id-ID' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) })) + '</div></div>' +
     '<button class="icon-btn sm un-touch-target" data-menu="' + esc(s.id) + '" aria-label="' + esc(t('more') || 'Menu') + '">' + ICON.more + '</button></div>' +
