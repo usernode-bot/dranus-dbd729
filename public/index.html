@@ -229,7 +229,6 @@
     .hero { text-align: center; padding: 1.6rem 1rem 1.2rem; border-radius: 20px; position: relative; overflow: hidden;
       background: radial-gradient(120% 90% at 50% 0%, rgba(212, 166, 74, .22), transparent 60%), linear-gradient(180deg, var(--panel2), var(--panel));
       border: 1px solid var(--line); }
-    .hero h2 { font-family: var(--font-title); letter-spacing: .14em; text-transform: uppercase; font-size: 1.6rem; margin: .4rem 0; color: var(--gold); }
     .proj-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: .75rem; }
     .proj-card { display: flex; flex-direction: column; align-items: stretch; gap: .65rem; padding: .8rem; border-radius: 14px; background: var(--panel);
       border: 1px solid var(--card-line); box-shadow: var(--card-shadow); cursor: pointer; }
@@ -2381,13 +2380,13 @@ function homeHeader() {
 function viewHome(root) {
   const idx = loadIndex();
   root.innerHTML = homeHeader() + '<main class="main home stack" data-testid="home" style="gap:1.4rem">' +
-    '<section class="hero"><span class="chip">' + esc(t('shortFilm')) + '</span><h2>' + esc(t('heroTitle')) + '</h2><p class="muted" style="margin:0 0 1rem">' + esc(t('tagline')) + '</p>' +
+    '<section class="hero"><p class="muted" style="margin:0 0 1rem">' + esc(t('tagline')) + '</p>' +
     '<div class="row wrap" style="justify-content:center"><a class="btn primary big" href="#/baru" data-testid="home-start">' + ICON.idea + esc(t('startIdea')) + '</a><a class="btn big" href="#/cerita" data-testid="home-outline">' + ICON.wand + esc(t('outline')) + '</a><a class="btn big" href="#/templat">' + ICON.film + esc(t('pickTemplate')) + '</a></div></section>' +
     '<section><div class="row" style="margin-bottom:.6rem"><h2 class="sec-title grow" style="margin:0">' + esc(t('myProjects')) + '</h2><button class="btn sm" data-act="import">' + ICON.upload + esc(t('importProject')) + '</button></div>' +
     (idx.length ? '<div class="proj-grid">' + idx.map(projCard).join('') + '</div>'
-      : '<div class="empty" data-testid="empty-projects">' + ICON.film2.replace('<svg', '<svg style="width:40px;height:40px;color:var(--gold)"') + '<p style="font-weight:600;margin:.5rem 0 1rem">' + esc(t('emptyProjects')) + '</p><div class="row wrap" style="justify-content:center"><a class="btn primary" href="#/baru">' + esc(t('startIdea')) + '</a><a class="btn" href="#/templat">' + esc(t('pickTemplate')) + '</a></div></div>') +
+      : '<div class="empty" data-testid="empty-projects">' + ICON.film2.replace('<svg', '<svg style="width:40px;height:40px;color:var(--gold)"') + '<p style="font-weight:600;margin:.5rem 0 1rem">' + esc(t('emptyProjects')) + '</p></div>') +
     '<p class="tiny muted" style="margin:.6rem 0 0">' + esc(t('localNote')) + '</p></section>' +
-    '<section><div class="row" style="margin-bottom:.6rem"><h2 class="sec-title grow" style="margin:0">' + esc(t('templates')) + '</h2><a class="btn sm ghost" href="#/templat">' + esc(t('allTemplates')) + '</a></div><div class="tpl-grid">' + TEMPLATES.map(tplCard).join('') + '</div></section></main>';
+    '<section><div class="row" style="margin-bottom:.6rem"><h2 class="sec-title grow" style="margin:0">' + esc(t('templates')) + '</h2><a class="btn sm ghost" href="#/templat">' + esc(t('allTemplates')) + '</a></div><div class="tpl-grid">' + TEMPLATES.slice(0, 3).map(tplCard).join('') + '</div></section></main>';
   bindHeader(root);
   on(root, '[data-tpl]', 'click', (e, b) => go('#/templat/' + b.dataset.tpl));
   on(root, '[data-act=import]', 'click', () => $('#import-file').click());
