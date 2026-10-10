@@ -411,6 +411,7 @@ const STR = {
     deleted: 'Proyek dihapus', duplicated: 'Proyek diduplikat', imported: 'Proyek diimpor', importBad: 'Berkas bukan proyek Studio Drama Pendek yang valid.',
     exported: 'Berkas JSON diunduh', saved: 'Proyek tersimpan', save: 'Simpan', storageFull: 'Penyimpanan perangkat penuh. Ekspor proyek ke JSON lalu hapus yang lama.',
     edited: 'Diubah {d}', copySuffix: '(salinan)', untitled: 'Tanpa Judul', allTemplates: 'Lihat semua',
+    resume: 'Lanjutkan: {t}',
     back: 'Kembali', next: 'Lanjut', home: 'Beranda', theme: 'Mode terang atau gelap', language: 'Bahasa',
     steps: ['Ide', 'Tokoh', 'Naskah', 'Storyboard', 'Suara', 'Putar'],
     stepTitles: ['Ide', 'Tokoh', 'Naskah', 'Storyboard', 'Suara & Musik', 'Putar & Ekspor'],
@@ -480,6 +481,7 @@ const STR = {
     deleted: 'Project deleted', duplicated: 'Project duplicated', imported: 'Project imported', importBad: 'This file is not a valid Short Drama Studio project.',
     exported: 'JSON file downloaded', saved: 'Project saved', save: 'Save', storageFull: 'Device storage is full. Export projects to JSON and delete old ones.',
     edited: 'Edited {d}', copySuffix: '(copy)', untitled: 'Untitled', allTemplates: 'See all',
+    resume: 'Continue: {t}',
     back: 'Back', next: 'Next', home: 'Home', theme: 'Light or dark mode', language: 'Language',
     steps: ['Idea', 'Cast', 'Script', 'Storyboard', 'Sound', 'Play'],
     stepTitles: ['Idea', 'Cast', 'Script', 'Storyboard', 'Sound & Music', 'Play & Export'],
@@ -2380,9 +2382,18 @@ function homeHeader() {
 }
 function viewHome(root) {
   const idx = loadIndex();
+  const last = idx.length ? idx.reduce((a, b) => ((b.updatedAt || 0) > (a.updatedAt || 0) ? b : a), idx[0]) : null;
+  let lastName = '';
+  if (last) {
+    const full = last.title || t('untitled');
+    lastName = full.length > 30 ? full.slice(0, 30).trimEnd() + '...' : full;
+  }
+  const resumeBtn = last
+    ? '<a class="btn primary big" href="#/p/' + esc(last.id) + '/ide" data-testid="home-resume" title="' + esc(last.title || t('untitled')) + '">' + ICON.play + esc(t('resume', { t: lastName })) + '</a>'
+    : '';
   root.innerHTML = homeHeader() + '<main class="main home stack" data-testid="home" style="gap:1.4rem">' +
     '<section class="hero"><span class="chip">' + esc(t('shortFilm')) + '</span><h2>' + esc(t('heroTitle')) + '</h2><p class="muted" style="margin:0 0 1rem">' + esc(t('tagline')) + '</p>' +
-    '<div class="row wrap" style="justify-content:center"><a class="btn primary big" href="#/baru" data-testid="home-start">' + ICON.idea + esc(t('startIdea')) + '</a><a class="btn big" href="#/cerita" data-testid="home-outline">' + ICON.wand + esc(t('outline')) + '</a><a class="btn big" href="#/templat">' + ICON.film + esc(t('pickTemplate')) + '</a></div></section>' +
+    '<div class="row wrap" style="justify-content:center">' + resumeBtn + '<a class="btn ' + (last ? '' : 'primary ') + 'big" href="#/baru" data-testid="home-start">' + ICON.idea + esc(t('startIdea')) + '</a><a class="btn big" href="#/cerita" data-testid="home-outline">' + ICON.wand + esc(t('outline')) + '</a><a class="btn big" href="#/templat">' + ICON.film + esc(t('pickTemplate')) + '</a></div></section>' +
     '<section><div class="row" style="margin-bottom:.6rem"><h2 class="sec-title grow" style="margin:0">' + esc(t('myProjects')) + '</h2><button class="btn sm" data-act="import">' + ICON.upload + esc(t('importProject')) + '</button></div>' +
     (idx.length ? '<div class="proj-grid">' + idx.map(projCard).join('') + '</div>'
       : '<div class="empty" data-testid="empty-projects">' + ICON.film2.replace('<svg', '<svg style="width:40px;height:40px;color:var(--gold)"') + '<p style="font-weight:600;margin:.5rem 0 1rem">' + esc(t('emptyProjects')) + '</p><div class="row wrap" style="justify-content:center"><a class="btn primary" href="#/baru">' + esc(t('startIdea')) + '</a><a class="btn" href="#/templat">' + esc(t('pickTemplate')) + '</a></div></div>') +
