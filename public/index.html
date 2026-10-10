@@ -2342,9 +2342,19 @@ function render() {
 }
 
 /* ---------- home ---------- */
+/* The card's small picture: the film's first shot, drawn like the storyboard frames, so the card shows
+   what the player will show. Falls back to the plain scene background when there is no shot to draw. */
+function cardThumb(s) {
+  try {
+    const d = readProject(s.id);
+    const seg = d && buildTimeline(d).segs.find((x) => x.kind === 'shot');
+    if (seg) return frameThumb(d, seg.p, d.project.settings.aspect === '9:16' ? '9:16' : '16:9');
+  } catch (_) {}
+  return bgSVG(s.cover, s.coverTime);
+}
 function projCard(s) {
   return '<div class="proj-card" data-open="' + esc(s.id) + '" role="button" tabindex="0" data-testid="project-card">' +
-    '<div class="thumb">' + bgSVG(s.cover, s.coverTime) + '</div><div class="grow"><h3>' + esc(s.title || t('untitled')) + '</h3>' +
+    '<div class="thumb">' + cardThumb(s) + '</div><div class="grow"><h3>' + esc(s.title || t('untitled')) + '</h3>' +
     '<div class="row wrap small muted" style="gap:.35rem;margin-top:.2rem"><span class="chip">' + esc(lbl('genre', s.genre)) + '</span><span>' + fmtTime(s.estMs || 0) + ' / ' + fmtTime((s.targetMinutes || 1) * 60000) + '</span></div>' +
     '<div class="tiny muted" style="margin-top:.2rem">' + esc(t('edited', { d: new Date(s.updatedAt).toLocaleDateString(LANG === 'id' ? 'id-ID' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) })) + '</div></div>' +
     '<button class="icon-btn sm" data-menu="' + esc(s.id) + '" aria-label="' + esc(t('more') || 'Menu') + '">' + ICON.more + '</button></div>';
