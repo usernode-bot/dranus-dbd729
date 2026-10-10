@@ -13,6 +13,11 @@
       "expectSelector": "[data-testid=home-start]"
     },
     {
+      "name": "Home hero shows the value proposition",
+      "path": "/",
+      "expectText": "Buat Video Drama Pendek dari Naskah sampai Layar"
+    },
+    {
       "name": "Home header shows the DRANUS logo",
       "path": "/",
       "expectSelector": ".hdr img[data-testid=app-logo][src='/logo.svg']"
