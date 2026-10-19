@@ -139,6 +139,22 @@ Genre: ${i.genre || ''}. Tone: ${i.tone || ''}.
 Return {"title":"short film title","logline":"one sentence","characters":[{"name":"...","age":30,"role":"utama|pendukung","traits":"two or three traits"}],"conflict":"two sentences on the central conflict","beats":[{"act":1,"title":"beat name","summary":"one or two sentences"}],"ending":"two sentences on how the story ends"}.
 Give 2 to 5 characters and 5 to 7 beats spread across acts 1, 2 and 3.`;
   }
+  if (kind === 'split') {
+    const characters = (i.characters || []).map((c) => c.name).join(', ');
+    return `Split this short drama script, written by the user, into scenes in ${language}.
+Keep the writer's own dialogue words; only fix obvious typos. Do not add new dialogue.
+Title: ${i.title || ''}. Genre: ${i.genre || ''}. Tone: ${i.tone || ''}.
+Characters (match speakers to exactly these names, otherwise use "Narator"): ${characters}.
+Allowed location keys: ${JSON.stringify(i.locations || [])}. Use a key when the place fits one, else a short place name.
+Spread the scenes across acts 1, 2 and 3 in story order. At most ${i.maxScenes || 20} scenes.
+If a scene has no stage direction, write a one-sentence action from what happens.
+Leave out any part of the script that breaks the content rules.
+Script:
+"""
+${i.text || ''}
+"""
+Return {"scenes":[{"act":1|2|3,"location":"<location key or short place name>","timeOfDay":"pagi|siang|malam","mood":"...","action":"one sentence","lines":[{"character":"<name or Narator>","text":"..."}]}]}.`;
+  }
   return `Write a three-act script for a short drama film in ${language}.
 Title: ${i.title || ''}. Genre: ${i.genre || ''}. Tone: ${i.tone || ''}. Premise: ${i.premise || ''}.
 Target length: ${i.targetMinutes || 1} minute(s), so about ${i.sceneCount || 3} scenes with ${i.linesPerScene || 4} short dialogue lines each.
@@ -159,7 +175,7 @@ app.get('/api/ai/status', (_req, res) => res.json({ llm: LLM_ENABLED }));
 app.post('/api/ai/generate', async (req, res) => {
   if (!LLM_ENABLED) return res.status(503).json({ code: 'llm_unavailable' });
   const { kind, lang, input } = req.body || {};
-  if (kind !== 'ideas' && kind !== 'script' && kind !== 'outline') return res.status(400).json({ code: 'bad_kind' });
+  if (kind !== 'ideas' && kind !== 'script' && kind !== 'outline' && kind !== 'split') return res.status(400).json({ code: 'bad_kind' });
   if (JSON.stringify(input || {}).length > 8192) return res.status(413).json({ code: 'too_large' });
   try {
     const upstream = await fetch(`${process.env.USERNODE_LLM_PROXY_URL}/v1/messages`, {
@@ -172,7 +188,7 @@ app.post('/api/ai/generate', async (req, res) => {
       },
       body: JSON.stringify({
         model: LLM_MODEL,
-        max_tokens: kind === 'script' ? 4000 : kind === 'outline' ? 1500 : 800,
+        max_tokens: kind === 'script' || kind === 'split' ? 4000 : kind === 'outline' ? 1500 : 800,
         system: AI_SYSTEM,
         messages: [{ role: 'user', content: aiPrompt(kind, lang, input) }],
       }),
