@@ -48,6 +48,24 @@
       "expectSelector": "[data-testid=template-card]"
     },
     {
+      "name": "Template cards show a real film frame with characters",
+      "path": "/#/templat",
+      "expectSelector": "[data-testid=template-frame] image",
+      "visual": true,
+      "impact": [
+        "public/index.html"
+      ]
+    },
+    {
+      "name": "Template preview shows the scene reel",
+      "path": "/#/templat/surat-dari-ibu",
+      "expectSelector": "[data-testid=template-reel] [data-testid=reel-scene]",
+      "visual": true,
+      "impact": [
+        "public/index.html"
+      ]
+    },
+    {
       "name": "Story outline screen opens",
       "path": "/#/cerita",
       "expectSelector": "[data-testid=outline-premise]"
