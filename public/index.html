@@ -147,7 +147,7 @@
     .hdr-in { max-width: 1100px; margin: 0 auto; display: flex; align-items: center; gap: .5rem; }
     .brand { display: flex; align-items: center; gap: .5rem; min-width: 0; }
     .brand-logo { width: 28px; height: 28px; flex: none; }
-    .brand h1 { font-size: 1rem; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--gold); }
+    .brand h1 { font-size: 1rem; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--gold-ink); }
     .proj-name { background: transparent; border: 1px solid transparent; border-radius: 10px; padding: .4rem .5rem;
       font-weight: 600; font-size: 1rem; min-width: 0; width: 100%; }
     .proj-name:focus { border-color: var(--gold); outline: none; background: var(--panel); }
@@ -163,10 +163,10 @@
     .btn.ghost { background: transparent; }
     .btn.danger { color: var(--danger); }
     .btn.big { min-height: 54px; font-size: 1.05rem; padding: .7rem 1.3rem; border-radius: 14px; }
-    .btn.sm { min-height: 36px; padding: .3rem .7rem; font-size: .85rem; border-radius: 10px; }
+    .btn.sm { min-height: 44px; padding: .3rem .7rem; font-size: .85rem; border-radius: 10px; }
     .icon-btn { width: 44px; height: 44px; min-width: 44px; display: inline-flex; align-items: center; justify-content: center;
       border-radius: 12px; border: 1px solid var(--line); background: var(--panel2); cursor: pointer; padding: 0; }
-    .icon-btn.sm { width: 36px; height: 36px; min-width: 36px; border-radius: 10px; }
+    .icon-btn.sm { width: 36px; height: 36px; min-width: 44px; min-height: 44px; border-radius: 10px; }
     .icon-btn svg, .btn svg { width: 20px; height: 20px; }
     .chip { display: inline-flex; align-items: center; gap: .3rem; padding: .2rem .6rem; border-radius: 999px;
       font-size: .75rem; font-weight: 600; background: var(--gold-soft); color: var(--gold); }
@@ -178,7 +178,7 @@
     .main.home { padding-bottom: calc(2rem + var(--safe-b)); }
     .card { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 1rem; box-shadow: var(--shadow); }
     .card.flat { box-shadow: none; }
-    .sec-title { font-family: var(--font-title); letter-spacing: .1em; text-transform: uppercase; font-size: .95rem; color: var(--gold); margin: 0 0 .6rem; }
+    .sec-title { font-family: var(--font-title); letter-spacing: .1em; text-transform: uppercase; font-size: .95rem; color: var(--gold-ink); margin: 0 0 .6rem; }
     .step-head h2 { font-family: var(--font-title); letter-spacing: .1em; text-transform: uppercase; margin: 0; font-size: 1.35rem; }
     .step-head p { margin: .25rem 0 0; }
 
@@ -250,7 +250,7 @@
     .tpl-card { border-radius: 14px; overflow: hidden; background: var(--panel); border: 1px solid var(--line); cursor: pointer; text-align: left; padding: 0; display: flex; flex-direction: column; }
     .tpl-card .cover { aspect-ratio: 16/9; background: #000; position: relative; }
     .tpl-card .cover svg { width: 100%; height: 100%; display: block; }
-    .tpl-card .cover .ttl { position: absolute; inset: auto 0 0 0; padding: .6rem .7rem; background: linear-gradient(transparent, rgba(0,0,0,.8));
+    .tpl-card .cover .ttl { position: absolute; inset: 0; display: flex; align-items: flex-end; padding: .6rem .7rem; background: linear-gradient(transparent 55%, rgba(0,0,0,.82));
       color: #f6e7c4; font-family: var(--font-title); letter-spacing: .08em; text-transform: uppercase; font-size: .9rem; }
     .tpl-card .body { padding: .65rem .75rem .8rem; font-size: .85rem; }
 
@@ -362,7 +362,7 @@
     .preview-box p { margin: .25rem 0; }
     .loading-screen { min-height: 60vh; display: flex; align-items: center; justify-content: center; gap: .6rem; }
     @media (max-width: 440px) { .hdr .btn.sm.primary span { display: none; } .hdr .btn.sm.primary { padding: .3rem .55rem; } }
-    .lang-toggle { min-width: 52px; font-weight: 800; font-size: .8rem; }
+    .lang-toggle { min-width: 52px; min-height: 44px; font-weight: 800; font-size: .8rem; }
   </style>
 </head>
 <body>
@@ -2464,12 +2464,14 @@ function projCard(s) {
     '<button class="icon-btn sm un-touch-target" data-menu="' + esc(s.id) + '" aria-label="' + esc(t('more') || 'Menu') + '">' + ICON.more + '</button></div>' +
     '<button class="btn primary big proj-cta" data-testid="project-open" aria-label="' + esc(t('open') + ' ' + title) + '">' + ICON.play + esc(t('open')) + '</button></div>';
 }
-/* A template card's cover: a real frame from the template's own film (the first shot with someone in it),
-   cropped to fill, like projThumb(). Falls back to the first scene's backdrop when there is no shot. */
+/* A template card's cover: a real frame from the template's own film, cropped to fill, like projThumb().
+   A medium or close shot comes first so the faces are large and sit above the title gradient.
+   Falls back to the first scene's backdrop when there is no shot. */
 function tplThumb(d, first) {
   try {
     const plan = effectiveShots(d);
-    const p = plan.find((x) => (x.shot.characterIds || []).length) || plan[0];
+    const withChars = plan.filter((x) => (x.shot.characterIds || []).length);
+    const p = withChars.find((x) => x.shot.type === 'medium' || x.shot.type === 'closeup') || withChars[0] || plan[0];
     if (p) return frameSVG(d, p, d.project.settings.aspect).replace(/^<svg([^>]*?) width="\d+" height="\d+"/, '<svg$1 preserveAspectRatio="xMidYMid slice"');
   } catch (_) {}
   return bgSVG(first.location, first.timeOfDay);
