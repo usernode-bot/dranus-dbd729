@@ -460,7 +460,7 @@ const STR = {
     exportRealtime: 'Ekspor berjalan sesuai durasi film. Biarkan halaman ini tetap terbuka.', exporting: 'Merekam video... {p}', videoReady: 'Video siap',
     downloadAs: 'Unduh {f}', noRecorder: 'Peramban ini tidak mendukung perekaman video (MediaRecorder). Coba Chrome, Edge, atau Firefox terbaru.',
     exportFail: 'Ekspor gagal. Coba lagi.', preparing: 'Menyiapkan...', shortFilm: 'Sebuah film pendek', castCredits: 'Pemeran & Pengisi Suara',
-    madeWith: 'Dibuat dengan Studio Drama Pendek', voiceOf: 'suara {v}', useTemplate: 'Pakai Templat Ini', templatePreview: 'Pratinjau templat',
+    madeWith: 'Dibuat dengan Studio Drama Pendek', voiceOf: 'suara {v}', useTemplate: 'Pakai Templat Ini', templatePreview: 'Pratinjau templat', reel: 'Cuplikan adegan',
     templateUsed: 'Templat disalin ke proyek baru', longPress: 'Jika unduhan tidak mulai, tekan lama video untuk menyimpan.',
     saveGallery: 'Simpan ke Galeri', saveNow: 'Simpan sekarang', saveNowHint: 'Video siap. Ketuk Simpan sekarang untuk menyimpan ke galeri.', saveImage: 'Simpan Gambar', imageNotReady: 'Gambar belum siap. Coba lagi sebentar.',
     savedVideoDl: 'Video diunduh. Buka folder Unduhan untuk memindahkannya ke galeri.', savedImageDl: 'Gambar diunduh. Buka folder Unduhan untuk memindahkannya ke galeri.',
@@ -532,7 +532,7 @@ const STR = {
     exportRealtime: 'Export runs in real time. Keep this page open.', exporting: 'Recording video... {p}', videoReady: 'Video ready',
     downloadAs: 'Download {f}', noRecorder: 'This browser cannot record video (MediaRecorder). Try a recent Chrome, Edge or Firefox.',
     exportFail: 'Export failed. Try again.', preparing: 'Preparing...', shortFilm: 'A short film', castCredits: 'Cast & Voices',
-    madeWith: 'Made with Short Drama Studio', voiceOf: '{v} voice', useTemplate: 'Use This Template', templatePreview: 'Template preview',
+    madeWith: 'Made with Short Drama Studio', voiceOf: '{v} voice', useTemplate: 'Use This Template', templatePreview: 'Template preview', reel: 'Scene reel',
     templateUsed: 'Template copied into a new project', longPress: 'If the download does not start, long-press the video to save it.',
     saveGallery: 'Save to Gallery', saveNow: 'Save now', saveNowHint: 'Video ready. Tap Save now to save it to your gallery.', saveImage: 'Save Image', imageNotReady: 'Image not ready yet. Try again in a moment.',
     savedVideoDl: 'Video downloaded. Open your Downloads folder to move it to your gallery.', savedImageDl: 'Image downloaded. Open your Downloads folder to move it to your gallery.',
@@ -2464,9 +2464,19 @@ function projCard(s) {
     '<button class="icon-btn sm un-touch-target" data-menu="' + esc(s.id) + '" aria-label="' + esc(t('more') || 'Menu') + '">' + ICON.more + '</button></div>' +
     '<button class="btn primary big proj-cta" data-testid="project-open" aria-label="' + esc(t('open') + ' ' + title) + '">' + ICON.play + esc(t('open')) + '</button></div>';
 }
+/* A template card's cover: a real frame from the template's own film (the first shot with someone in it),
+   cropped to fill, like projThumb(). Falls back to the first scene's backdrop when there is no shot. */
+function tplThumb(d, first) {
+  try {
+    const plan = effectiveShots(d);
+    const p = plan.find((x) => (x.shot.characterIds || []).length) || plan[0];
+    if (p) return frameSVG(d, p, d.project.settings.aspect).replace(/^<svg([^>]*?) width="\d+" height="\d+"/, '<svg$1 preserveAspectRatio="xMidYMid slice"');
+  } catch (_) {}
+  return bgSVG(first.location, first.timeOfDay);
+}
 function tplCard(tpl) {
   const d = buildTemplate(tpl); const first = scenesSorted(d)[0];
-  return '<button class="tpl-card" data-tpl="' + tpl.id + '" data-testid="template-card"><div class="cover">' + bgSVG(first.location, first.timeOfDay) + '<div class="ttl">' + esc(tplTitle(tpl)) + '</div></div>' +
+  return '<button class="tpl-card" data-tpl="' + tpl.id + '" data-testid="template-card"><div class="cover" data-testid="template-frame">' + tplThumb(d, first) + '<div class="ttl">' + esc(tplTitle(tpl)) + '</div></div>' +
     '<div class="body"><div class="row wrap" style="gap:.3rem;margin-bottom:.35rem"><span class="chip">' + esc(lbl('genre', tpl.genre)) + '</span><span class="chip">' + esc(lbl('tone', tpl.tone)) + '</span><span class="small muted">' + fmtTime(estimateMs(d)) + '</span></div>' +
     '<div class="muted">' + esc(tplDesc(tpl)) + '</div></div></button>';
 }
@@ -2551,15 +2561,31 @@ function viewTemplatePreview(root, id, step) {
     }
     return;
   }
+  // One frame per scene, in story order: the scene's first shot with someone in it, else its first shot.
+  const plan = effectiveShots(d);
+  const reel = scenesSorted(d).map((sc, i) => {
+    const ps = plan.filter((x) => x.sceneIdx === i);
+    const p = ps.find((x) => (x.shot.characterIds || []).length) || ps[0];
+    if (!p) return '';
+    const label = t('scene') + ' ' + (i + 1);
+    return '<button class="shot-card" style="flex:none;width:140px" data-reel="' + i + '" data-testid="reel-scene" aria-label="' + esc(label) + '"><div class="frame">' + frameThumb(d, p, '16:9') + '</div><div class="meta"><b>' + esc(label) + '</b></div></button>';
+  }).join('');
   root.innerHTML = simpleHeader('#/templat', t('templatePreview')) + '<main class="main home stack" data-testid="template-preview">' +
     '<div><h2 class="title-font" style="margin:0;color:var(--gold);font-size:1.4rem">' + esc(tplTitle(tpl)) + '</h2><p class="muted" style="margin:.3rem 0 .5rem">' + esc(tplDesc(tpl)) + '</p>' +
     '<div class="row wrap"><span class="chip">' + esc(lbl('genre', tpl.genre)) + '</span><span class="chip">' + esc(lbl('tone', tpl.tone)) + '</span><span class="chip">' + d.characters.length + ' ' + esc(t('characters')) + '</span><span class="chip">' + d.scenes.length + ' ' + esc(t('scenesN')) + '</span></div></div>' +
     (TTS.supported ? '' : '<div class="banner">' + ICON.warn + '<span>' + esc(t('noTts')) + '</span></div>') +
     '<div class="card" data-ref="player"></div>' +
+    (reel ? '<div data-testid="template-reel"><h3 class="sec-title" style="margin:0">' + esc(t('reel')) + '</h3><div class="tl"><div class="row" style="align-items:stretch">' + reel + '</div></div></div>' : '') +
     '<div class="row wrap">' + d.characters.map((c) => '<div class="row" style="gap:.4rem"><div style="width:44px;height:52px;border-radius:8px;overflow:hidden;flex:none">' + avatarImg(c) + '</div><div class="small"><b>' + esc(c.name) + '</b><div class="muted tiny">' + esc(lbl('role', c.role)) + '</div></div></div>').join('') + '</div>' +
     '<button class="btn primary big" data-act="use" data-testid="use-template">' + ICON.copy + esc(t('useTemplate')) + '</button></main>';
   bindHeader(root);
   App.player = new Player($('[data-ref=player]', root), () => App.data, { editable: false });
+  on(root, '[data-reel]', 'click', (e, b) => {
+    const pl = App.player; if (!pl || !pl.tl) return;
+    const seg = pl.tl.segs.find((s) => s.kind === 'shot' && s.p.sceneIdx === +b.dataset.reel);
+    // Past the shot's opening transition, so a paused player shows that scene's frame instead of a fade from black.
+    if (seg) pl.seek(seg.start + (seg.transMs || 0) + 1);
+  });
   on(root, '[data-act=use]', 'click', () => useTemplate(tpl));
 }
 
